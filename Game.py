@@ -3,179 +3,94 @@ from Cardinal import Cardinal
 from Candidate import Candidate
 from Faction import Faction
 from NonElector import NonElector
+from data import get_initial_factions, get_initial_candidates, get_initial_non_electors
+from ui import get_input, show_menu, display_info
+from rules import calculate_votes, check_majority
 
 class Game:
     def __init__(self):
         self.player = None
-        self.factions = [
-            Faction("Conservadores", "Conservador"),
-            Faction("Moderados", "Moderado"),
-            Faction("Progressistas", "Progressista")
-        ]
-        self.candidates = [
-            Candidate("Cardeal Rossi", "Conservador", "Vétérano", "Europa"),
-            Candidate("Cardeal Gomez", "Moderado", "Jovem", "Américas"),
-            Candidate("Cardeal Tanaka", "Progressista", "Jovem", "Ásia")
-        ]
-        self.non_electors = [
-            NonElector("Cardeal Bianchi", "Conservador", "Europa", ["Cardeal Rossi é favorito entre conservadores."]),
-            NonElector("Cardeal Silva", "Moderado", "Américas", ["Cardeal Gomez busca consenso."]),
-            NonElector("Cardeal Kim", "Progressista", "Ásia", ["Rumores de apoio a Cardeal Tanaka."])
-        ]
+        self.factions = get_initial_factions()
+        self.candidates = get_initial_candidates()
+        self.non_electors = get_initial_non_electors()
         self.current_phase = "information_gathering"
         self.events = []
 
     def start_game(self):
-        print("Bem-vindo ao Conclave!")
+        display_info("Bem-vindo ao Conclave!")
         name = input("Digite o nome do seu cardeal: ")
+        ideology = get_input("Escolha a ideologia do seu cardeal:", ["Conservador", "Moderado", "Progressista"], "Moderado")
+        age = get_input("Escolha a faixa etária do seu cardeal:", ["Jovem e adaptável", "Vétérano e autoritário"], "Vétérano")
+        bloc = get_input("Escolha o bloco regional do seu cardeal:", ["Europa", "Américas", "Ásia", "África"], "Europa")
 
-        # Escolha ideologia
-        print("Escolha a ideologia do seu cardeal:")
-        print("1. Conservador")
-        print("2. Moderado")
-        print("3. Progressista")
-        ideology_choice = int(input("Digite o número correspondente: "))
-        if ideology_choice == 1:
-            ideology = "Conservador"
-        elif ideology_choice == 2:
-            ideology = "Moderado"
-        elif ideology_choice == 3:
-            ideology = "Progressista"
-        else:
-            print("Escolha inválida. Usando padrão: Moderado")
-            ideology = "Moderado"
-
-        # Escolha idade
-        print("Escolha a faixa etária do seu cardeal:")
-        print("1. Jovem e adaptável")
-        print("2. Vétérano e autoritário")
-        age_choice = int(input("Digite o número correspondente: "))
-        if age_choice == 1:
-            age = "Jovem"
-        elif age_choice == 2:
-            age = "Vétérano"
-        else:
-            print("Escolha inválida. Usando padrão: Vétérano")
-            age = "Vétérano"
-
-        # Escolha bloco regional
-        print("Escolha o bloco regional do seu cardeal:")
-        print("1. Europa")
-        print("2. Américas")
-        print("3. Ásia")
-        print("4. África")
-        bloc_choice = int(input("Digite o número correspondente: "))
-        if bloc_choice == 1:
-            bloc = "Europa"
-        elif bloc_choice == 2:
-            bloc = "Américas"
-        elif bloc_choice == 3:
-            bloc = "Ásia"
-        elif bloc_choice == 4:
-            bloc = "África"
-        else:
-            print("Escolha inválida. Usando padrão: Europa")
-            bloc = "Europa"
-
-        # Atribuir atributos aleatórios
         influence = random.randint(1, 10)
         charisma = random.randint(1, 10)
         scholarship = random.randint(1, 10)
         strategy = random.randint(1, 10)
         discretion = random.randint(1, 10)
 
-        # Criar jogador
         self.player = Cardinal(name, ideology, age, bloc, influence, charisma, scholarship, strategy, discretion)
-
-        # Imprimir atributos
-        print(f"Seu cardeal {name} foi criado com os seguintes atributos:")
-        print(f"Ideologia: {ideology}")
-        print(f"Idade: {age}")
-        print(f"Bloco regional: {bloc}")
-        print(f"Influência: {influence}")
-        print(f"Carisma: {charisma}")
-        print(f"Erudição: {scholarship}")
-        print(f"Estratégia: {strategy}")
-        print(f"Discrição: {discretion}")
+        display_info(f"Seu cardeal {name} foi criado com os seguintes atributos:")
+        display_info(f"Ideologia: {ideology}")
+        display_info(f"Idade: {age}")
+        display_info(f"Bloco regional: {bloc}")
+        display_info(f"Influência: {influence}")
+        display_info(f"Carisma: {charisma}")
+        display_info(f"Erudição: {scholarship}")
+        display_info(f"Estratégia: {strategy}")
+        display_info(f"Discrição: {discretion}")
 
     def information_gathering_phase(self):
-        print("Fase de coleta de informação:")
+        display_info("Fase de coleta de informação:")
         while True:
-            print("Escolha um cardeal não eleitor para falar:")
-            for i, non_elector in enumerate(self.non_electors):
-                print(f"{i+1}. {non_elector.name}")
-            print("0. Sair")
-            choice = int(input("Digite o número correspondente: "))
+            choice = show_menu("Escolha um cardeal não eleitor para falar:", [n.name for n in self.non_electors])
             if choice == 0:
                 break
             elif 1 <= choice <= len(self.non_electors):
-                selected_non_elector = self.non_electors[choice-1]
-                print(f"Falando com {selected_non_elector.name}:")
-                for info in selected_non_elector.information:
-                    print(info)
+                selected = self.non_electors[choice - 1]
+                display_info(f"Falando com {selected.name}:")
+                for info in selected.information:
+                    display_info(info)
             else:
-                print("Escolha inválida. Tente novamente.")
+                display_info("Escolha inválida. Tente novamente.")
 
     def dialogues_and_negotiations_phase(self):
-        print("Fase de diálogos e negociações:")
+        display_info("Fase de diálogos e negociações:")
         while True:
-            print("Escolha uma facção para interagir ou saia:")
-            for i, faction in enumerate(self.factions):
-                print(f"{i+1}. {faction.name}")
-            print("0. Sair")
-            choice = int(input("Digite o número correspondente: "))
+            choice = show_menu("Escolha uma facção para interagir ou saia:", [f.name for f in self.factions])
             if choice == 0:
                 break
             elif 1 <= choice <= len(self.factions):
-                selected_faction = self.factions[choice-1]
-                print(f"Interagindo com {selected_faction.name}:")
-                print("Escolha uma ação:")
-                print("1. Persuadir a apoiar meu candidato")
-                print("2. Oferecer favor para ganhar suporte")
-                action_choice = int(input("Digite o número correspondente: "))
-                if action_choice == 1:
-                    # Lógica simples de persuasão baseada em carisma
+                selected_faction = self.factions[choice - 1]
+                display_info(f"Interagindo com {selected_faction.name}:")
+                action = get_input("Escolha uma ação:", ["Persuadir a apoiar meu candidato", "Oferecer favor para ganhar suporte"], None)
+                if action == "Persuadir a apoiar meu candidato":
                     success_chance = self.player.charisma * 10
                     if random.randint(1, 100) <= success_chance:
-                        selected_faction.candidate_support[self.candidates[0]] = 70  # Suporte ao primeiro candidato como exemplo
+                        selected_faction.candidate_support[self.candidates[0]] = 70
                         selected_faction.relationship_with_player += 10
-                        print("Persuasão bem-sucedida!")
+                        display_info("Persuasão bem-sucedida!")
                     else:
                         selected_faction.relationship_with_player -= 5
-                        print("Falha na persuasão.")
-                elif action_choice == 2:
-                    selected_faction.candidate_support[self.candidates[0]] = 50  # Suporte menor por favor
+                        display_info("Falha na persuasão.")
+                elif action == "Oferecer favor para ganhar suporte":
+                    selected_faction.candidate_support[self.candidates[0]] = 50
                     selected_faction.relationship_with_player += 5
-                    print("Favor oferecido e aceito.")
-                else:
-                    print("Ação inválida.")
-            else:
-                print("Escolha inválida.")
+                    display_info("Favor oferecido e aceito.")
 
     def voting_rounds_phase(self):
-        print("Rodada de votação:")
-        candidate_votes = {}
-        for faction in self.factions:
-            for candidate, support in faction.candidate_support.items():
-                votes = int(support / 100 * 60)  # 60 membros como exemplo por facção
-                if candidate in candidate_votes:
-                    candidate_votes[candidate] += votes
-                else:
-                    candidate_votes[candidate] = votes
-
+        display_info("Rodada de votação:")
+        candidate_votes = calculate_votes(self.factions)
         for candidate, votes in candidate_votes.items():
-            print(f"{candidate.name}: {votes} votos")
+            display_info(f"{candidate.name}: {votes} votos")
             candidate.vote_count = votes
 
-        total_voters = len(self.factions) * 60  # 60 membros por facção como exemplo
-        required_majority = total_voters // 2 + 1  # Maioria simples
-
-        for candidate in self.candidates:
-            if candidate.vote_count >= required_majority:
-                print(f"{candidate.name} foi eleito Papa!")
-                return True
-
-        print("Nenhum candidato alcançou a maioria. Nova rodada de negociações.")
+        total_voters = len(self.factions) * 60
+        winner = check_majority(candidate_votes, total_voters)
+        if winner:
+            display_info(f"{winner.name} foi eleito Papa!")
+            return True
+        display_info("Nenhum candidato alcançou a maioria. Nova rodada de negociações.")
         return False
 
     def run(self):
