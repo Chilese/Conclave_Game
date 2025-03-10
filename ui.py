@@ -1,21 +1,25 @@
 def get_input(prompt, options, default=None):
     print(prompt)
-    for i, option in enumerate(options, 1):
-        print(f"{i}. {option}")
-    choice = int(input("Digite o número correspondente: "))
-    if 1 <= choice <= len(options):
-        return options[choice - 1]
-    print(f"Escolha inválida. Usando padrão: {default}")
-    return default
+    if isinstance(options, list):
+        for i, option in enumerate(options):
+            print(f"{i}. {option}")  # Exibe opções numeradas
+        while True:
+            choice = input("Escolha (número): ")
+            try:
+                idx = int(choice)
+                if 0 <= idx < len(options):
+                    return idx  # Retorna o índice como inteiro
+                else:
+                    print(f"Por favor, escolha um número entre 0 e {len(options)-1}.")
+            except ValueError:
+                print("Entrada inválida. Digite um número.")
+    return input("Digite: ") or default
 
-def show_menu(prompt, items, exit_option=True):
-    print(prompt)
-    for i, item in enumerate(items, 1):
-        print(f"{i}. {item}")
-    if exit_option:
-        print("0. Sair")
-    choice = int(input("Digite o número correspondente: "))
-    return choice
+def show_menu(prompt, options):
+    display_info(prompt)
+    for i, option in enumerate(options):
+        display_info(f"{i}. {option}")
+    return int(input("Escolha (número): "))
 
 def display_info(message):
     print(message)
