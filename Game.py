@@ -2,9 +2,8 @@ import random
 from Cardinal import Cardinal
 from Candidate import Candidate
 from Faction import Faction
-from NonElector import NonElector
-from Event import Event  # Adicionado
-from data import get_initial_factions, get_initial_candidates, get_initial_non_electors
+from Event import Event
+from data import get_initial_factions, get_initial_candidates
 from ui import get_input, show_menu, display_info
 from rules import calculate_votes, check_majority
 
@@ -13,8 +12,7 @@ class Game:
         self.player = None
         self.factions = get_initial_factions()
         self.candidates = get_initial_candidates()
-        self.non_electors = get_initial_non_electors()
-        self.current_phase = "information_gathering"
+        self.current_phase = "dialogues_and_negotiations"  # Ajustado
         self.events = [
             Event("Escândalo envolvendo um candidato", lambda: self.apply_scandal()),
             Event("Doação generosa aumenta apoio", lambda: self.apply_donation()),
@@ -63,24 +61,9 @@ class Game:
         display_info(f"Estratégia: {strategy}")
         display_info(f"Discrição: {discretion}")
 
-    def information_gathering_phase(self):
-        display_info("Fase de coleta de informação:")
-        while True:
-            choice = show_menu("Escolha um cardeal não eleitor para falar:", [n.name for n in self.non_electors])
-            if choice == 0:
-                break
-            elif 1 <= choice <= len(self.non_electors):
-                selected = self.non_electors[choice - 1]
-                display_info(f"Falando com {selected.name}:")
-                for info in selected.information:
-                    display_info(info)
-            else:
-                display_info("Escolha inválida. Tente novamente.")
-
     def dialogues_and_negotiations_phase(self):
         display_info("Fase de diálogos e negociações:")
         while True:
-            # Chance de evento (30%)
             if random.random() < 0.3 and self.events:
                 event = random.choice(self.events)
                 display_info(f"Evento: {event.description}")
@@ -98,7 +81,7 @@ class Game:
                     if random.randint(1, 100) <= success_chance:
                         selected_faction.candidate_support[self.candidates[0]] = 70
                         selected_faction.relationship_with_player += 10
-                        display_info("Persuasão bem-sucedida!")
+                        display_info(f"Persuasão bem-sucedida! Chance foi {success_chance}%.")
                     else:
                         selected_faction.relationship_with_player -= 5
                         display_info("Falha na persuasão.")
@@ -114,13 +97,12 @@ class Game:
             display_info(f"{candidate.name}: {votes} votos")
             candidate.vote_count = votes
 
-        total_voters = len(self.factions) * 60
+        total_voters = sum(faction.num_members for faction in self.factions)  # Ajustado (requer num_members em Faction)
         winner = check_majority(candidate_votes, total_voters)
         if winner:
             display_info(f"{winner.name} foi eleito Papa!")
             return True
         
-        # Evento após votação sem vencedor
         if random.random() < 0.3 and self.events:
             event = random.choice(self.events)
             display_info(f"Evento após votação: {event.description}")
@@ -131,7 +113,6 @@ class Game:
 
     def run(self):
         self.start_game()
-        self.information_gathering_phase()
         while True:
             self.dialogues_and_negotiations_phase()
             if self.voting_rounds_phase():
