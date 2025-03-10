@@ -3,6 +3,7 @@ from Cardinal import Cardinal
 from Candidate import Candidate
 from Faction import Faction
 from NonElector import NonElector
+from Event import Event  # Adicionado
 from data import get_initial_factions, get_initial_candidates, get_initial_non_electors
 from ui import get_input, show_menu, display_info
 from rules import calculate_votes, check_majority
@@ -14,7 +15,29 @@ class Game:
         self.candidates = get_initial_candidates()
         self.non_electors = get_initial_non_electors()
         self.current_phase = "information_gathering"
-        self.events = []
+        self.events = [
+            Event("Escândalo envolvendo um candidato", lambda: self.apply_scandal()),
+            Event("Doação generosa aumenta apoio", lambda: self.apply_donation()),
+            Event("Crise de saúde entre cardeais", lambda: self.apply_health_crisis())
+        ]
+
+    def apply_scandal(self):
+        candidate = random.choice(self.candidates)
+        faction = random.choice(self.factions)
+        if candidate in faction.candidate_support:
+            faction.candidate_support[candidate] = max(0, faction.candidate_support[candidate] - 20)
+        display_info(f"Escândalo! O suporte a {candidate.name} na facção {faction.name} caiu.")
+
+    def apply_donation(self):
+        faction = random.choice(self.factions)
+        candidate = random.choice(self.candidates)
+        faction.candidate_support[candidate] = min(100, faction.candidate_support.get(candidate, 0) + 30)
+        display_info(f"Doação generosa! O suporte a {candidate.name} na facção {faction.name} aumentou.")
+
+    def apply_health_crisis(self):
+        faction = random.choice(self.factions)
+        faction.relationship_with_player = max(-50, faction.relationship_with_player - 10)
+        display_info(f"Crise de saúde! Relacionamento com {faction.name} piorou.")
 
     def start_game(self):
         display_info("Bem-vindo ao Conclave!")
@@ -57,6 +80,12 @@ class Game:
     def dialogues_and_negotiations_phase(self):
         display_info("Fase de diálogos e negociações:")
         while True:
+            # Chance de evento (30%)
+            if random.random() < 0.3 and self.events:
+                event = random.choice(self.events)
+                display_info(f"Evento: {event.description}")
+                event.effect()
+
             choice = show_menu("Escolha uma facção para interagir ou saia:", [f.name for f in self.factions])
             if choice == 0:
                 break
@@ -90,6 +119,13 @@ class Game:
         if winner:
             display_info(f"{winner.name} foi eleito Papa!")
             return True
+        
+        # Evento após votação sem vencedor
+        if random.random() < 0.3 and self.events:
+            event = random.choice(self.events)
+            display_info(f"Evento após votação: {event.description}")
+            event.effect()
+
         display_info("Nenhum candidato alcançou a maioria. Nova rodada de negociações.")
         return False
 
