@@ -48,7 +48,7 @@ class Game:
     def start_game(self):
         display_info("Bem-vindo ao Conclave!")
         name = input("Digite o nome do seu cardeal: ")
-        ideology = get_input("Escolha sua ideologia:", ["Conservador", "Moderado", "Progressista"], "Moderado")
+        # Removido: ideology = get_input("Escolha sua ideologia:", ["Conservador", "Moderado", "Progressista"], "Moderado")
         age = get_input("Escolha sua faixa etária:", ["Jovem", "Vétérano"], "Vétérano")
         region = get_input("Escolha sua região:", ["Europa", "Américas", "Ásia", "África"], "Europa")
 
@@ -61,13 +61,16 @@ class Game:
         remaining -= scholarship
         discretion = int(get_input(f"Discrição (restam {remaining}):", list(range(0, remaining + 1)), remaining))
 
-        self.player = Cardinal(name, ideology, age, region, influence, charisma, scholarship, discretion)
-        display_info(f"Seu cardeal {name}: Influência={influence}, Carisma={charisma}, Erudição={scholarship}, Discrição={discretion}")
-
-        # Escolha do candidato favorito (ajustado)
+        # Escolha do candidato favorito
         candidate_names = [c.name for c in self.candidates]
         candidate_choice = get_input("Escolha seu candidato favorito:", candidate_names, 0)
-        self.favorite_candidate = self.candidates[int(candidate_choice)]  # Convertemos para índice
+        self.favorite_candidate = self.candidates[int(candidate_choice)]
+        
+        # O jogador herda a ideologia do candidato favorito
+        ideology = self.favorite_candidate.ideology
+        self.player = Cardinal(name, ideology, age, region, influence, charisma, scholarship, discretion)
+        
+        display_info(f"Seu cardeal {name}: Ideologia={ideology}, Influência={influence}, Carisma={charisma}, Erudição={scholarship}, Discrição={discretion}")
         display_info(f"Você escolheu {self.favorite_candidate.name} como seu candidato favorito.")
 
         # Montagem do contexto
