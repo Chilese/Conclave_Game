@@ -12,25 +12,25 @@ class Game:
     def __init__(self):
         """Inicializa o estado do jogo."""
         self.player = None
-        self.total_cardinals = 206  # Total de eleitores (205 NPCs + jogador)
-        self.factions = get_initial_factions(self.total_cardinals - 1)  # 205 NPCs distribuídos
-        self.influential_cardinals = get_influential_cardinals()  # 5 influentes por facção
-        self.candidates = self._select_candidates()  # 1 candidato por facção
+        self.total_cardinals = 206  # 205 NPCs + jogador
+        self.factions = get_initial_factions(self.total_cardinals - 1)  # 205 NPCs
+        self.influential_cardinals = get_influential_cardinals()  # 15 influentes
+        self.candidates = self._select_candidates()  # 3 candidatos iniciais
         self.current_phase = "preparation"
         self.events = [
             Event("Escândalo Revelado", 2, "negative"),
             Event("Elogio Público", 1, "positive"),
             Event("Crise de Confiança", 2, "negative")
         ]
-        self.active_events = []  # Eventos ativos
+        self.active_events = []
         self.rounds = 0
-        self.interactions_this_cycle = 0  # Contador de interações
+        self.interactions_this_cycle = 0
 
     def _select_candidates(self):
-        """Seleciona um cardeal influente de cada facção como candidato (exclui o jogador inicialmente)."""
+        """Seleciona um cardeal influente de cada facção como candidato inicial."""
         candidates = []
         for faction in self.factions:
-            faction_cardinals = [c for c in self.influential_cardinals if c.ideology == faction.ideology and c != self.player]
+            faction_cardinals = [c for c in self.influential_cardinals if c.ideology == faction.ideology]
             if faction_cardinals:
                 candidate = random.choice(faction_cardinals)
                 candidates.append(candidate)
@@ -58,9 +58,7 @@ class Game:
         
         ideology = self.favorite_candidate.ideology
         self.player = Cardinal(name, ideology, age, region, influence, charisma, scholarship, discretion)
-        
-        # Adiciona o jogador à lista de cardeais influentes
-        self.influential_cardinals.append(self.player)
+        # Não adiciona o jogador a influential_cardinals para evitar que receba votos
         
         display_info(f"Seu cardeal {name}: Ideologia={ideology}, Influência={influence}, Carisma={charisma}, Erudição={scholarship}, Discrição={discretion}")
         display_info(f"Você escolheu {self.favorite_candidate.name} como seu candidato favorito.")
@@ -74,23 +72,22 @@ class Game:
         for faction in self.factions:
             for cardinal in self.influential_cardinals:
                 if cardinal.ideology == faction.ideology:
-                    support = random.randint(5, 30)
-                    faction.candidate_support[cardinal] = support
+                    support = random.randint(10, 40)
                 else:
-                    faction.candidate_support[cardinal] = random.randint(0, 10)
-            # Normalizar o suporte para soma = 100%
+                    support = random.randint(0, 15)
+                faction.candidate_support[cardinal] = support
             total_support = sum(faction.candidate_support.values())
             if total_support > 0:
                 for candidate in faction.candidate_support:
                     faction.candidate_support[candidate] = (faction.candidate_support[candidate] / total_support) * 100
-            display_info(f"{faction.name}: Suporte inicial distribuído entre cardeais.")
+            display_info(f"{faction.name}: Suporte inicial distribuído.")
 
     def dialogues_and_negotiations_phase(self):
         """Executa uma rodada de negociações."""
         self.rounds += 1
         display_info(f"\nRodada {self.rounds} - Fase de Negociações:")
         
-        if random.random() < 0.2 and self.events:
+        if random.random() < 0.3 and self.events:
             event = random.choice(self.events)
             self.active_events.append({"event": event, "remaining": event.duration})
             display_info(f"Evento: {event.name}")
@@ -115,22 +112,27 @@ class Game:
             Interactions.manipulate_rumors(self.player, target, self.favorite_candidate, self.factions, self.candidates)
 
     def voting_rounds_phase(self):
-        """Realiza uma votação, incluindo o voto do jogador, e verifica se há um vencedor."""
-        display_info("\nRodada de Votação:")
+        """Realiza uma votação com lógica estratégica."""
+        display_info(f"\nRodada de Votação {self.rounds + 1}:")
         
-        # Calcula os votos dos NPCs (205 eleitores)
-        candidate_votes = calculate_votes(self.factions)
+        # Calcula os votos dos NPCs (205)
+        candidate_votes = calculate_votes(self.factions, self.rounds)
         
-        # Permite que o jogador vote
+        # Garante que o total inicial seja 205
+        total_npc_votes = sum(candidate_votes.values())
+        if total_npc_votes != 205:
+            adjustment_factor = 205 / total_npc_votes if total_npc_votes > 0 else 1
+            for candidate in candidate_votes:
+                candidate_votes[candidate] = round(candidate_votes[candidate] * adjustment_factor)
+        
+        # Voto do jogador
         vote_choice = show_menu("Escolha em quem votar:", [c.name for c in self.influential_cardinals])
         player_vote = self.influential_cardinals[vote_choice]
         display_info(f"Você votou em {player_vote.name}.")
-        
-        # Adiciona o voto do jogador ao total
         candidate_votes[player_vote] = candidate_votes.get(player_vote, 0) + 1
         
         total_votes = sum(candidate_votes.values())
-        display_info(f"Total de votos computados: {total_votes}")  # Debug
+        display_info(f"Total de votos computados: {total_votes}")
         for candidate, votes in candidate_votes.items():
             display_info(f"{candidate.name}: {votes} votos")
             candidate.vote_count = votes
@@ -146,15 +148,20 @@ class Game:
             return False
 
     def adjust_faction_support(self, candidate_votes):
-        """Ajusta o suporte das facções para os candidatos mais votados."""
-        top_candidates = sorted(candidate_votes.items(), key=lambda x: x[1], reverse=True)[:2]
+        """Ajusta o suporte com consolidação estratégica."""
+        top_candidates = sorted(candidate_votes.items(), key=lambda x: x[1], reverse=True)[:5 if self.rounds < 2 else 3]
         for faction in self.factions:
-            for candidate, _ in top_candidates:
+            # Mantém suporte mínimo
+            for cardinal in self.influential_cardinals:
+                if cardinal not in faction.candidate_support or faction.candidate_support[cardinal] < 1:
+                    faction.candidate_support[cardinal] = 1
+            
+            # Reforça os mais votados
+            for candidate, votes in top_candidates:
                 if candidate in faction.candidate_support:
-                    faction.candidate_support[candidate] += 15
-                else:
-                    faction.candidate_support[candidate] = 5
-            # Normalizar o suporte para soma = 100%
+                    faction.candidate_support[candidate] += 10 + (self.rounds * 3)
+            
+            # Normaliza para 100%
             total_support = sum(faction.candidate_support.values())
             if total_support > 0:
                 for candidate in faction.candidate_support:
