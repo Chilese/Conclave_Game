@@ -58,7 +58,6 @@ class Game:
         
         ideology = self.favorite_candidate.ideology
         self.player = Cardinal(name, ideology, age, region, influence, charisma, scholarship, discretion)
-        # Não adiciona o jogador a influential_cardinals para evitar que receba votos
         
         display_info(f"Seu cardeal {name}: Ideologia={ideology}, Influência={influence}, Carisma={charisma}, Erudição={scholarship}, Discrição={discretion}")
         display_info(f"Você escolheu {self.favorite_candidate.name} como seu candidato favorito.")
@@ -112,18 +111,15 @@ class Game:
             Interactions.manipulate_rumors(self.player, target, self.favorite_candidate, self.factions, self.candidates)
 
     def voting_rounds_phase(self):
-        """Realiza uma votação com lógica estratégica."""
+        """Realiza uma votação com total fixo de 206 votos."""
         display_info(f"\nRodada de Votação {self.rounds + 1}:")
         
         # Calcula os votos dos NPCs (205)
         candidate_votes = calculate_votes(self.factions, self.rounds)
         
-        # Garante que o total inicial seja 205
+        # Verifica que os votos dos NPCs somam 205
         total_npc_votes = sum(candidate_votes.values())
-        if total_npc_votes != 205:
-            adjustment_factor = 205 / total_npc_votes if total_npc_votes > 0 else 1
-            for candidate in candidate_votes:
-                candidate_votes[candidate] = round(candidate_votes[candidate] * adjustment_factor)
+        assert total_npc_votes == 205, f"Erro: Votos dos NPCs devem ser 205, mas são {total_npc_votes}"
         
         # Voto do jogador
         vote_choice = show_menu("Escolha em quem votar:", [c.name for c in self.influential_cardinals])
@@ -131,7 +127,9 @@ class Game:
         display_info(f"Você votou em {player_vote.name}.")
         candidate_votes[player_vote] = candidate_votes.get(player_vote, 0) + 1
         
+        # Verifica o total final
         total_votes = sum(candidate_votes.values())
+        assert total_votes == 206, f"Erro: Total de votos deve ser 206, mas é {total_votes}"
         display_info(f"Total de votos computados: {total_votes}")
         for candidate, votes in candidate_votes.items():
             display_info(f"{candidate.name}: {votes} votos")

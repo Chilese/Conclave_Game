@@ -1,6 +1,6 @@
 # rules.py
 def calculate_votes(factions, round_number):
-    """Calcula os votos dos NPCs com base no suporte."""
+    """Calcula os votos dos NPCs com total fixo de 205."""
     candidate_votes = {}
     total_electors = sum(faction.num_members for faction in factions)  # 205 NPCs
     
@@ -18,7 +18,14 @@ def calculate_votes(factions, round_number):
     if current_total > 0:
         adjustment_factor = total_electors / current_total
         for candidate in candidate_votes:
-            candidate_votes[candidate] = round(candidate_votes[candidate] * adjustment_factor)
+            candidate_votes[candidate] = int(candidate_votes[candidate] * adjustment_factor)
+    
+    # Corrige qualquer discrepância final
+    final_total = sum(candidate_votes.values())
+    if final_total != total_electors:
+        difference = total_electors - final_total
+        top_candidate = max(candidate_votes, key=candidate_votes.get)
+        candidate_votes[top_candidate] += difference
     
     return candidate_votes
 
