@@ -1,7 +1,7 @@
 # rules.py
 def calculate_votes(factions):
     candidate_votes = {}
-    total_electors = sum(faction.num_members for faction in factions)  # Deve ser 206
+    total_electors = sum(faction.num_members for faction in factions)  # 205 NPCs
     for faction in factions:
         members = faction.num_members
         total_support = sum(faction.candidate_support.values())
@@ -10,7 +10,7 @@ def calculate_votes(factions):
                 votes = (support / 100) * members
                 candidate_votes[candidate] = candidate_votes.get(candidate, 0) + votes
 
-    # Ajustar para garantir que o total seja exatamente total_electors (206)
+    # Ajustar para garantir que o total seja exatamente 205
     current_total = sum(candidate_votes.values())
     if current_total > 0:
         adjustment_factor = total_electors / current_total
@@ -20,7 +20,7 @@ def calculate_votes(factions):
     return candidate_votes
 
 def check_majority(candidate_votes, total_voters):
-    required_majority = int(total_voters * 2 / 3) + 1
+    required_majority = int(total_voters * 2 / 3) + 1  # 138 votos para 206 eleitores
     for candidate, votes in candidate_votes.items():
         if votes >= required_majority:
             return candidate

@@ -1,11 +1,11 @@
 # data.py
 import random
-from Faction import Faction  # Supondo que a classe Faction esteja definida em outro arquivo
-from Cardinal import Cardinal  # Supondo que a classe Cardinal esteja definida em outro arquivo
+from Faction import Faction
+from Cardinal import Cardinal
 
 def get_initial_factions(total_cardinals):
     """
-    Gera as três facções com membros distribuídos de acordo com o total de cardeais.
+    Gera as três facções com membros distribuídos de acordo com o total de cardeais (205 NPCs).
     """
     base_members = total_cardinals // 3
     extra = total_cardinals % 3

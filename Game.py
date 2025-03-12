@@ -12,8 +12,8 @@ class Game:
     def __init__(self):
         """Inicializa o estado do jogo."""
         self.player = None
-        self.total_cardinals = 206  # Número fixo de eleitores
-        self.factions = get_initial_factions(self.total_cardinals)  # Facções com membros somando 206
+        self.total_cardinals = 206  # Total de eleitores (205 NPCs + jogador)
+        self.factions = get_initial_factions(self.total_cardinals - 1)  # 205 NPCs distribuídos
         self.influential_cardinals = get_influential_cardinals()  # 5 influentes por facção
         self.candidates = self._select_candidates()  # 1 candidato por facção
         self.current_phase = "preparation"
@@ -27,17 +27,17 @@ class Game:
         self.interactions_this_cycle = 0  # Contador de interações
 
     def _select_candidates(self):
-        """Seleciona um cardeal influente de cada facção como candidato."""
+        """Seleciona um cardeal influente de cada facção como candidato (exclui o jogador inicialmente)."""
         candidates = []
         for faction in self.factions:
-            faction_cardinals = [c for c in self.influential_cardinals if c.ideology == faction.ideology]
+            faction_cardinals = [c for c in self.influential_cardinals if c.ideology == faction.ideology and c != self.player]
             if faction_cardinals:
                 candidate = random.choice(faction_cardinals)
                 candidates.append(candidate)
         return candidates
 
     def start_game(self):
-        """Configura o cardeal do jogador."""
+        """Configura o cardeal do jogador e o integra ao colégio."""
         display_info("Bem-vindo ao Conclave!")
         name = input("Digite o nome do seu cardeal: ")
         age = get_input("Escolha sua faixa etária:", ["Jovem", "Vétérano"], "Vétérano")
@@ -59,8 +59,12 @@ class Game:
         ideology = self.favorite_candidate.ideology
         self.player = Cardinal(name, ideology, age, region, influence, charisma, scholarship, discretion)
         
+        # Adiciona o jogador à lista de cardeais influentes
+        self.influential_cardinals.append(self.player)
+        
         display_info(f"Seu cardeal {name}: Ideologia={ideology}, Influência={influence}, Carisma={charisma}, Erudição={scholarship}, Discrição={discretion}")
         display_info(f"Você escolheu {self.favorite_candidate.name} como seu candidato favorito.")
+        display_info(f"Você é um dos {self.total_cardinals} cardeais eleitores do Conclave.")
 
         self.setup_context()
 
@@ -111,11 +115,22 @@ class Game:
             Interactions.manipulate_rumors(self.player, target, self.favorite_candidate, self.factions, self.candidates)
 
     def voting_rounds_phase(self):
-        """Realiza uma votação e verifica se há um vencedor."""
+        """Realiza uma votação, incluindo o voto do jogador, e verifica se há um vencedor."""
         display_info("\nRodada de Votação:")
+        
+        # Calcula os votos dos NPCs (205 eleitores)
         candidate_votes = calculate_votes(self.factions)
+        
+        # Permite que o jogador vote
+        vote_choice = show_menu("Escolha em quem votar:", [c.name for c in self.influential_cardinals])
+        player_vote = self.influential_cardinals[vote_choice]
+        display_info(f"Você votou em {player_vote.name}.")
+        
+        # Adiciona o voto do jogador ao total
+        candidate_votes[player_vote] = candidate_votes.get(player_vote, 0) + 1
+        
         total_votes = sum(candidate_votes.values())
-        display_info(f"Total de votos computados: {total_votes}")  # Debug: verificar total de votos
+        display_info(f"Total de votos computados: {total_votes}")  # Debug
         for candidate, votes in candidate_votes.items():
             display_info(f"{candidate.name}: {votes} votos")
             candidate.vote_count = votes
