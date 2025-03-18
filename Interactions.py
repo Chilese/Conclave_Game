@@ -1,6 +1,7 @@
 import random
 from Faction import Faction
 from Cardinal import Cardinal
+from utils import normalize_support, display_feedback  # Importa funções utilitárias
 
 def persuade(player: Cardinal, target: Cardinal, favorite_candidate: Cardinal, factions: list[Faction]):
     """
@@ -38,18 +39,13 @@ def persuade(player: Cardinal, target: Cardinal, favorite_candidate: Cardinal, f
         target_faction.candidate_support[favorite_candidate] = effect
 
     # Normaliza o suporte para 100%
-    total_support = sum(target_faction.candidate_support.values())
-    for candidate in target_faction.candidate_support:
-        target_faction.candidate_support[candidate] = (target_faction.candidate_support[candidate] / total_support) * 100
+    normalize_support(target_faction.candidate_support)
 
     # Captura o suporte depois
     new_support = target_faction.candidate_support.get(favorite_candidate, 0)
 
     # Exibe feedback detalhado
-    print(f"Persuasão bem-sucedida! Suporte ao {favorite_candidate.name} na facção {target_faction.name}:")
-    print(f"  Antes: {previous_support:.2f}%")
-    print(f"  Depois: {new_support:.2f}%")
-    print(f"  Mudança: {new_support - previous_support:.2f}%")
+    display_feedback("Persuasão", favorite_candidate.name, target_faction.name, previous_support, new_support)
 
 def propose_alliance(player: Cardinal, target: Cardinal, favorite_candidate: Cardinal, factions: list[Faction]):
     """
@@ -81,9 +77,7 @@ def propose_alliance(player: Cardinal, target: Cardinal, favorite_candidate: Car
         if random.randint(1, 100) <= failure_chance:
             if favorite_candidate in target_faction.candidate_support:
                 target_faction.candidate_support[favorite_candidate] = max(0, target_faction.candidate_support[favorite_candidate] - 5)
-            total_support = sum(target_faction.candidate_support.values())
-            for candidate in target_faction.candidate_support:
-                target_faction.candidate_support[candidate] = (target_faction.candidate_support[candidate] / total_support) * 100
+            normalize_support(target_faction.candidate_support)
             new_target_support = target_faction.candidate_support.get(favorite_candidate, 0)
             print(f"Aliança falhou! Suporte ao {favorite_candidate.name} na facção {target_faction.name}:")
             print(f"  Antes: {previous_target_support:.2f}%")
@@ -104,24 +98,15 @@ def propose_alliance(player: Cardinal, target: Cardinal, favorite_candidate: Car
 
     # Normaliza ambas as facções
     for faction in [target_faction, player_faction]:
-        total_support = sum(faction.candidate_support.values())
-        for candidate in faction.candidate_support:
-            faction.candidate_support[candidate] = (faction.candidate_support[candidate] / total_support) * 100
+        normalize_support(faction.candidate_support)
 
     # Captura os suportes depois
     new_target_support = target_faction.candidate_support.get(favorite_candidate, 0)
     new_player_support = player_faction.candidate_support.get(target, 0)
 
     # Exibe feedback detalhado
-    print(f"Aliança bem-sucedida!")
-    print(f"Suporte ao {favorite_candidate.name} na facção {target_faction.name}:")
-    print(f"  Antes: {previous_target_support:.2f}%")
-    print(f"  Depois: {new_target_support:.2f}%")
-    print(f"  Mudança: {new_target_support - previous_target_support:.2f}%")
-    print(f"Suporte ao {target.name} na facção {player_faction.name}:")
-    print(f"  Antes: {previous_player_support:.2f}%")
-    print(f"  Depois: {new_player_support:.2f}%")
-    print(f"  Mudança: {new_player_support - previous_player_support:.2f}%")
+    display_feedback("Aliança", favorite_candidate.name, target_faction.name, previous_target_support, new_target_support)
+    display_feedback("Aliança", target.name, player_faction.name, previous_player_support, new_player_support)
 
 def manipulate_rumors(player: Cardinal, target: Cardinal, favorite_candidate: Cardinal, factions: list[Faction], candidates: list[Cardinal]):
     """
@@ -152,9 +137,7 @@ def manipulate_rumors(player: Cardinal, target: Cardinal, favorite_candidate: Ca
         previous_support = player_faction.candidate_support.get(favorite_candidate, 0)
         if favorite_candidate in player_faction.candidate_support:
             player_faction.candidate_support[favorite_candidate] = max(0, player_faction.candidate_support[favorite_candidate] - 10)
-        total_support = sum(player_faction.candidate_support.values())
-        for candidate in player_faction.candidate_support:
-            player_faction.candidate_support[candidate] = (player_faction.candidate_support[candidate] / total_support) * 100
+        normalize_support(player_faction.candidate_support)
         new_support = player_faction.candidate_support.get(favorite_candidate, 0)
         print(f"Manipulação falhou! Suporte ao {favorite_candidate.name} na facção {player_faction.name}:")
         print(f"  Antes: {previous_support:.2f}%")
@@ -173,12 +156,7 @@ def manipulate_rumors(player: Cardinal, target: Cardinal, favorite_candidate: Ca
                 if candidate != target:
                     target_faction.candidate_support[candidate] += (effect / (len(target_faction.candidate_support) - 1))
         # Normaliza para 100%
-        total_support = sum(target_faction.candidate_support.values())
-        for candidate in target_faction.candidate_support:
-            target_faction.candidate_support[candidate] = (target_faction.candidate_support[candidate] / total_support) * 100
+        normalize_support(target_faction.candidate_support)
 
     new_support = target_faction.candidate_support.get(target, 0)
-    print(f"Manipulação bem-sucedida! Suporte ao {target.name} na facção {target_faction.name}:")
-    print(f"  Antes: {previous_support:.2f}%")
-    print(f"  Depois: {new_support:.2f}%")
-    print(f"  Mudança: {new_support - previous_support:.2f}%")
+    display_feedback("Manipulação", target.name, target_faction.name, previous_support, new_support)

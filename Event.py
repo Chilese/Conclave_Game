@@ -10,12 +10,14 @@ class Event:
 
     def apply(self, factions, influential_cardinals):
         """Aplica o evento com base no nome, recebendo apenas os dados necessários."""
-        if self.name == "Escândalo Revelado":
-            self._apply_scandal(factions, influential_cardinals)
-        elif self.name == "Elogio Público":
-            self._apply_praise(factions, influential_cardinals)
-        elif self.name == "Crise de Confiança":
-            self._apply_crisis(factions, influential_cardinals)
+        event_actions = {
+            "Escândalo Revelado": self._apply_scandal,
+            "Elogio Público": self._apply_praise,
+            "Crise de Confiança": self._apply_crisis,
+        }
+        action = event_actions.get(self.name)
+        if action:
+            action(factions, influential_cardinals)
 
     def _apply_scandal(self, factions, influential_cardinals):
         faction = random.choice(factions)

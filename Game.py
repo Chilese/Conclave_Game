@@ -7,15 +7,20 @@ from Interactions import persuade, propose_alliance, manipulate_rumors
 from data import get_initial_factions, get_influential_cardinals
 from ui import get_input, show_menu, display_info
 from rules import calculate_votes, check_majority
+from utils import normalize_support  # Importa função utilitária
+
+# Constantes para valores fixos
+TOTAL_CARDINALS = 206
+NPC_CARDINALS = 205
 
 class Game:
     def __init__(self):
         """Inicializa o estado do jogo."""
         self.player = None
-        self.total_cardinals = 206  # 205 NPCs + jogador
-        self.factions = get_initial_factions(self.total_cardinals - 1)  # 205 NPCs
-        self.influential_cardinals = get_influential_cardinals()  # 15 influentes
-        self.candidates = self._select_candidates()  # 3 candidatos iniciais
+        self.total_cardinals = TOTAL_CARDINALS
+        self.factions = get_initial_factions(NPC_CARDINALS)
+        self.influential_cardinals = get_influential_cardinals()
+        self.candidates = self._select_candidates()
         self.current_phase = "preparation"
         self.events = [
             Event("Escândalo Revelado", 2, "negative"),
@@ -36,9 +41,12 @@ class Game:
                 candidates.append(candidate)
         return candidates
 
-    def start_game(self):
-        """Configura o cardeal do jogador e o integra ao colégio."""
-        display_info("Bem-vindo ao Conclave!")
+    def normalize_support(self, support_dict):
+        """Normaliza os valores de suporte para que somem 100%."""
+        normalize_support(support_dict)  # Usa a função centralizada
+
+    def configure_player_cardinal(self):
+        """Configura o cardeal do jogador."""
         name = input("Digite o nome do seu cardeal: ")
         age = get_input("Escolha sua faixa etária:", ["Jovem", "Vétérano"], "Vétérano")
         region = get_input("Escolha sua região:", ["Europa", "Américas", "Ásia", "África"], "Europa")
@@ -52,14 +60,22 @@ class Game:
         remaining -= scholarship
         discretion = int(get_input(f"Discrição (restam {remaining}):", list(range(0, remaining + 1)), remaining))
 
+        return Cardinal(name, None, age, region, influence, charisma, scholarship, discretion)
+
+    def choose_favorite_candidate(self):
+        """Permite ao jogador escolher seu candidato favorito."""
         candidate_names = [c.name for c in self.candidates]
         candidate_choice = get_input("Escolha seu candidato favorito:", candidate_names, 0)
-        self.favorite_candidate = self.candidates[int(candidate_choice)]
-        
-        ideology = self.favorite_candidate.ideology
-        self.player = Cardinal(name, ideology, age, region, influence, charisma, scholarship, discretion)
-        
-        display_info(f"Seu cardeal {name}: Ideologia={ideology}, Influência={influence}, Carisma={charisma}, Erudição={scholarship}, Discrição={discretion}")
+        return self.candidates[int(candidate_choice)]
+
+    def start_game(self):
+        """Configura o cardeal do jogador e o integra ao colégio."""
+        display_info("Bem-vindo ao Conclave!")
+        self.player = self.configure_player_cardinal()
+        self.favorite_candidate = self.choose_favorite_candidate()
+        self.player.ideology = self.favorite_candidate.ideology
+
+        display_info(f"Seu cardeal {self.player.name}: Ideologia={self.player.ideology}, Influência={self.player.influence}, Carisma={self.player.charisma}, Erudição={self.player.scholarship}, Discrição={self.player.discretion}")
         display_info(f"Você escolheu {self.favorite_candidate.name} como seu candidato favorito.")
         display_info(f"Você é um dos {self.total_cardinals} cardeais eleitores do Conclave.")
 
@@ -75,10 +91,7 @@ class Game:
                 else:
                     support = random.randint(0, 15)
                 faction.candidate_support[cardinal] = support
-            total_support = sum(faction.candidate_support.values())
-            if total_support > 0:
-                for candidate in faction.candidate_support:
-                    faction.candidate_support[candidate] = (faction.candidate_support[candidate] / total_support) * 100
+            self.normalize_support(faction.candidate_support)
             display_info(f"{faction.name}: Suporte inicial distribuído.")
 
     def dialogues_and_negotiations_phase(self):
@@ -128,7 +141,8 @@ class Game:
         
         # Verifica que os votos dos NPCs somam 205
         total_npc_votes = sum(candidate_votes.values())
-        assert total_npc_votes == 205, f"Erro: Votos dos NPCs devem ser 205, mas são {total_npc_votes}"
+        if total_npc_votes != NPC_CARDINALS:
+            raise ValueError(f"Erro: Votos dos NPCs devem ser {NPC_CARDINALS}, mas são {total_npc_votes}")
         
         # Voto do jogador
         vote_choice = show_menu("Escolha em quem votar:", [c.name for c in self.influential_cardinals])
@@ -138,7 +152,8 @@ class Game:
         
         # Verifica o total final
         total_votes = sum(candidate_votes.values())
-        assert total_votes == 206, f"Erro: Total de votos deve ser 206, mas é {total_votes}"
+        if total_votes != TOTAL_CARDINALS:
+            raise ValueError(f"Erro: Total de votos deve ser {TOTAL_CARDINALS}, mas é {total_votes}")
         display_info(f"Total de votos computados: {total_votes}")
         for candidate, votes in candidate_votes.items():
             display_info(f"{candidate.name}: {votes} votos")
