@@ -3,7 +3,7 @@ from Cardinal import Cardinal
 from Candidate import Candidate
 from Faction import Faction
 from Event import Event
-from Interactions import Interactions
+from Interactions import persuade, propose_alliance, manipulate_rumors
 from data import get_initial_factions, get_influential_cardinals
 from ui import get_input, show_menu, display_info
 from rules import calculate_votes, check_majority
@@ -104,15 +104,24 @@ class Game:
         action = get_input("Escolha uma ação:", ["Persuadir", "Propor Aliança", "Manipular Rumores"], None)
 
         if action == "Persuadir":
-            Interactions.persuade(self.player, target, self.favorite_candidate, self.factions)
+            persuade(self.player, target, self.favorite_candidate, self.factions)
         elif action == "Propor Aliança":
-            Interactions.propose_alliance(self.player, target, self.favorite_candidate, self.factions)
+            propose_alliance(self.player, target, self.favorite_candidate, self.factions)
         elif action == "Manipular Rumores":
-            Interactions.manipulate_rumors(self.player, target, self.favorite_candidate, self.factions, self.candidates)
+            manipulate_rumors(self.player, target, self.favorite_candidate, self.factions, self.candidates)
+
+    def display_faction_support(self):
+        """Exibe o suporte percentual de cada candidato em cada facção."""
+        display_info("\nSuporte Atual das Facções aos Candidatos:")
+        for faction in self.factions:
+            display_info(f"\n{faction.name} ({faction.ideology}):")
+            for candidate, support in faction.candidate_support.items():
+                display_info(f"  {candidate.name}: {support:.2f}%")
 
     def voting_rounds_phase(self):
         """Realiza uma votação com total fixo de 206 votos."""
         display_info(f"\nRodada de Votação {self.rounds + 1}:")
+        self.display_faction_support()  # Adicionado para fornecer visão geral antes da votação
         
         # Calcula os votos dos NPCs (205)
         candidate_votes = calculate_votes(self.factions, self.rounds)
