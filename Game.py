@@ -130,6 +130,12 @@ class Game:
         # Adicionado: Exibe a prévia do impacto antes de realizar a ação
         calcular_previa_impacto(action, self.player, target, self.favorite_candidate)
 
+        try:
+            target_faction = next(f for f in self.factions if f.ideology == target.ideology)
+        except StopIteration:
+            display_info(f"Nenhuma facção encontrada para a ideologia {target.ideology}.")
+            return
+
         if action == "Persuadir":
             persuade(self.player, target, self.favorite_candidate, self.factions)
             self.log_action(f"Você persuadiu {target.name}.")

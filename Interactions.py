@@ -3,6 +3,17 @@ from Faction import Faction
 from Cardinal import Cardinal
 from utils import normalize_support, display_feedback, display_info  # Importa funções utilitárias
 
+def normalize_and_redistribute(faction, target, effect):
+    """Normaliza e redistribui suporte em uma facção."""
+    # Redistribui o suporte perdido
+    total_support = sum(faction.candidate_support.values())
+    if total_support > 0:
+        for candidate in faction.candidate_support:
+            if candidate != target:
+                faction.candidate_support[candidate] += (effect / (len(faction.candidate_support) - 1))
+    # Normaliza para 100%
+    normalize_support(faction.candidate_support)
+
 def persuade(player: Cardinal, target: Cardinal, favorite_candidate: Cardinal, factions: list[Faction]):
     """
     Aumenta o suporte ao candidato favorito do jogador na facção do cardeal-alvo.
@@ -149,14 +160,7 @@ def manipulate_rumors(player: Cardinal, target: Cardinal, favorite_candidate: Ca
     previous_support = target_faction.candidate_support.get(target, 0)
     if target in target_faction.candidate_support:
         target_faction.candidate_support[target] = max(0, target_faction.candidate_support[target] - effect)
-        # Redistribui o suporte perdido
-        total_support = sum(target_faction.candidate_support.values())
-        if total_support > 0:
-            for candidate in target_faction.candidate_support:
-                if candidate != target:
-                    target_faction.candidate_support[candidate] += (effect / (len(target_faction.candidate_support) - 1))
-        # Normaliza para 100%
-        normalize_support(target_faction.candidate_support)
+        normalize_and_redistribute(target_faction, target, effect)
 
     new_support = target_faction.candidate_support.get(target, 0)
     display_feedback("Manipulação", target.name, target_faction.name, previous_support, new_support)
