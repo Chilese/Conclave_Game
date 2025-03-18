@@ -3,7 +3,7 @@ from Cardinal import Cardinal
 from Candidate import Candidate
 from Faction import Faction
 from Event import Event
-from Interactions import persuade, propose_alliance, manipulate_rumors
+from Interactions import persuade, propose_alliance, manipulate_rumors, calcular_previa_impacto
 from data import get_initial_factions, get_influential_cardinals
 from ui import get_input, show_menu, display_info
 from rules import calculate_votes, check_majority
@@ -30,6 +30,7 @@ class Game:
         self.active_events = []
         self.rounds = 0
         self.interactions_this_cycle = 0
+        self.action_log = []  # Adicionado: Log de ações
 
     def _select_candidates(self):
         """Seleciona um cardeal influente de cada facção como candidato inicial."""
@@ -94,6 +95,16 @@ class Game:
             self.normalize_support(faction.candidate_support)
             display_info(f"{faction.name}: Suporte inicial distribuído.")
 
+    def log_action(self, message):
+        """Registra uma ação no log."""
+        self.action_log.append(message)
+
+    def display_action_log(self):
+        """Exibe o log de ações para o jogador."""
+        display_info("\nHistórico de Ações:")
+        for action in self.action_log:
+            display_info(f"- {action}")
+
     def dialogues_and_negotiations_phase(self):
         """Executa uma rodada de negociações."""
         self.rounds += 1
@@ -116,12 +127,18 @@ class Game:
         display_info(f"Interagindo com {target.name} ({target.archetype})")
         action = get_input("Escolha uma ação:", ["Persuadir", "Propor Aliança", "Manipular Rumores"], None)
 
+        # Adicionado: Exibe a prévia do impacto antes de realizar a ação
+        calcular_previa_impacto(action, self.player, target, self.favorite_candidate)
+
         if action == "Persuadir":
             persuade(self.player, target, self.favorite_candidate, self.factions)
+            self.log_action(f"Você persuadiu {target.name}.")
         elif action == "Propor Aliança":
             propose_alliance(self.player, target, self.favorite_candidate, self.factions)
+            self.log_action(f"Você propôs uma aliança com {target.name}.")
         elif action == "Manipular Rumores":
             manipulate_rumors(self.player, target, self.favorite_candidate, self.factions, self.candidates)
+            self.log_action(f"Você manipulou rumores contra {target.name}.")
 
     def display_faction_support(self):
         """Exibe o suporte percentual de cada candidato em cada facção."""
@@ -158,6 +175,14 @@ class Game:
         for candidate, votes in candidate_votes.items():
             display_info(f"{candidate.name}: {votes} votos")
             candidate.vote_count = votes
+
+        display_info(f"\nResumo da Rodada {self.rounds + 1}:")
+        for faction in self.factions:
+            display_info(f"\n{faction.name} ({faction.ideology}):")
+            for candidate, support in faction.candidate_support.items():
+                display_info(f"  {candidate.name}: {support:.2f}%")
+        # Adiciona o resumo ao log de ações
+        self.log_action(f"Resumo da Rodada {self.rounds + 1} exibido.")
 
         total_voters = self.total_cardinals
         winner = check_majority(candidate_votes, total_voters)
@@ -205,3 +230,4 @@ class Game:
             else:
                 display_info("Nenhuma maioria alcançada. Retornando para mais negociações...")
                 self.interactions_this_cycle = 0
+            self.display_action_log()  # Exibe o log de ações no final do turno

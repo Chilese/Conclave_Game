@@ -1,7 +1,7 @@
 import random
 from Faction import Faction
 from Cardinal import Cardinal
-from utils import normalize_support, display_feedback  # Importa funções utilitárias
+from utils import normalize_support, display_feedback, display_info  # Importa funções utilitárias
 
 def persuade(player: Cardinal, target: Cardinal, favorite_candidate: Cardinal, factions: list[Faction]):
     """
@@ -160,3 +160,51 @@ def manipulate_rumors(player: Cardinal, target: Cardinal, favorite_candidate: Ca
 
     new_support = target_faction.candidate_support.get(target, 0)
     display_feedback("Manipulação", target.name, target_faction.name, previous_support, new_support)
+
+def calcular_previa_impacto(acao, player, target, favorite_candidate):
+    """
+    Calcula e exibe a prévia do impacto de uma ação.
+    :param acao: Nome da ação (str)
+    :param player: Cardeal do jogador
+    :param target: Cardeal alvo
+    :param favorite_candidate: Candidato favorito do jogador
+    """
+    if acao == "Persuadir":
+        base_effect = 5.0
+        charisma_bonus = player.charisma // 20
+        effect = base_effect + charisma_bonus
+        if favorite_candidate.ideology == target.ideology:
+            effect *= 1.5
+        elif favorite_candidate.ideology != target.ideology:
+            effect *= 0.8
+        display_info(f"Prévia: Persuadir {target.name} pode aumentar o suporte ao {favorite_candidate.name} em até {effect:.2f}%.")
+    elif acao == "Propor Aliança":
+        base_effect = 10.0
+        influence_bonus = player.influence // 25
+        effect = base_effect + influence_bonus
+        display_info(f"Prévia: Propor aliança com {target.name} pode aumentar o suporte ao {favorite_candidate.name} em até {effect:.2f}%.")
+    elif acao == "Manipular Rumores":
+        base_effect = 15.0
+        discretion_bonus = player.discretion // 15
+        effect = base_effect + discretion_bonus
+        display_info(f"Prévia: Manipular rumores contra {target.name} pode reduzir o suporte dele em até {effect:.2f}%.")
+
+def persuadir(player, target, favorite_candidate, factions):
+    calcular_previa_impacto("Persuadir", player, target, favorite_candidate)
+    # ...existing code...
+    target_faction = next(f for f in factions if f.ideology == target.ideology)
+    previous_support = target_faction.candidate_support.get(favorite_candidate, 0)
+    # ...existing code...
+    new_support = target_faction.candidate_support.get(favorite_candidate, 0)
+    display_feedback("Persuasão", favorite_candidate.name, target_faction.name, previous_support, new_support)
+    # ...existing code...
+
+def espalhar_rumores(player, target, favorite_candidate, factions):
+    calcular_previa_impacto("Espalhar Rumores", player, target, favorite_candidate)
+    # ...existing code...
+    target_faction = next(f for f in factions if f.ideology == target.ideology)
+    previous_support = target_faction.candidate_support.get(target, 0)
+    # ...existing code...
+    new_support = target_faction.candidate_support.get(target, 0)
+    display_feedback("Espalhar Rumores", target.name, target_faction.name, previous_support, new_support)
+    # ...existing code...

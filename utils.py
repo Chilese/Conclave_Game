@@ -7,7 +7,17 @@ def normalize_support(support_dict):
 
 def display_feedback(action, candidate_name, faction_name, previous_support, new_support):
     """Exibe feedback detalhado sobre mudanças de suporte."""
-    print(f"{action} bem-sucedida! Suporte ao {candidate_name} na facção {faction_name}:")
-    print(f"  Antes: {previous_support:.2f}%")
-    print(f"  Depois: {new_support:.2f}%")
-    print(f"  Mudança: {new_support - previous_support:.2f}%")
+    message = (
+        f"{action} bem-sucedida! Suporte ao {candidate_name} na facção {faction_name}:\n"
+        f"  Antes: {previous_support:.2f}%\n"
+        f"  Depois: {new_support:.2f}%\n"
+        f"  Mudança: {new_support - previous_support:.2f}%"
+    )
+    print(message)  # Garante que o feedback seja exibido no terminal
+
+def display_info(message: str):
+    """
+    Exibe uma mensagem informativa para o jogador.
+    :param message: Mensagem a ser exibida
+    """
+    print(f"[INFO] {message}")
