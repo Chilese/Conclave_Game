@@ -101,9 +101,27 @@ class Game:
         for action in self.action_log:
             display_info(f"- {action}")
 
+    def display_strategic_context(self):
+        """Exibe o suporte atual ao candidato favorito e aos principais rivais."""
+        display_info(f"\nRodada {self.rounds} - Fase de Negociações:")
+        display_info("---------------------")
+        display_info(f"Suporte Atual ao Seu Candidato ({self.favorite_candidate.name}):")
+        for faction in self.factions:
+            support = faction.candidate_support.get(self.favorite_candidate, 0)
+            display_info(f"- {faction.name}: {support:.2f}%")
+        
+        display_info("\nPrincipais Rivais:")
+        rivals = sorted(self.candidates, key=lambda c: sum(f.candidate_support.get(c, 0) for f in self.factions), reverse=True)[:3]
+        for rival in rivals:
+            if rival != self.favorite_candidate:
+                total_support = sum(f.candidate_support.get(rival, 0) for f in self.factions)
+                display_info(f"- {rival.name}: {total_support:.2f}% (total nas facções)")
+        display_info("---------------------")
+
     def dialogues_and_negotiations_phase(self):
         """Executa uma rodada de negociações."""
         self.rounds += 1
+        self.display_strategic_context()  # Exibe contexto estratégico
         display_info(f"\nRodada {self.rounds} - Fase de Negociações:")
         
         if random.random() < 0.3 and self.events:
@@ -142,12 +160,15 @@ class Game:
             self.log_action(f"Você manipulou rumores contra {target.name}.")
 
     def display_faction_support(self):
-        """Exibe o suporte percentual de cada candidato em cada facção."""
+        """Exibe o suporte percentual de cada candidato em cada facção, ordenado e com separadores."""
         display_info("\nSuporte Atual das Facções aos Candidatos:")
         for faction in self.factions:
             display_info(f"\n{faction.name} ({faction.ideology}):")
-            for candidate, support in faction.candidate_support.items():
+            # Ordena candidatos por suporte decrescente
+            sorted_candidates = sorted(faction.candidate_support.items(), key=lambda x: x[1], reverse=True)
+            for candidate, support in sorted_candidates:
                 display_info(f"  {candidate.name}: {support:.2f}%")
+            display_info("-" * 40)  # Separador visual
 
     def voting_rounds_phase(self):
         """Realiza uma votação com total fixo de 206 votos."""
