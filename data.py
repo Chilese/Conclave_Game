@@ -55,7 +55,7 @@ def get_influential_cardinals():
             cardinals.append(Cardinal(
                 name=name,
                 ideology=ideology,
-                age="Vétérano",
+                age=random.choice(["Jovem", "Vétérano"]),
                 region=random.choice(regions),
                 influence=random.randint(50, 90),
                 charisma=random.randint(50, 90),
