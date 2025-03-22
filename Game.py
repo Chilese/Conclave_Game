@@ -49,15 +49,17 @@ class Game:
         region = get_input("Escolha sua região:", ["Europa", "Américas", "Ásia", "África"], "Europa")
 
         display_info("Distribua 200 pontos entre Influência, Carisma, Erudição e Discrição (0-100):")
-        influence = int(get_input("Influência:", list(range(0, 101)), 50))
-        remaining = 200 - influence
-        charisma = int(get_input(f"Carisma (restam {remaining}):", list(range(0, remaining + 1)), 50))
-        remaining -= charisma
-        scholarship = int(get_input(f"Erudição (restam {remaining}):", list(range(0, remaining + 1)), 50))
-        remaining -= scholarship
-        discretion = int(get_input(f"Discrição (restam {remaining}):", list(range(0, remaining + 1)), remaining))
+        influence, charisma, erudition, discretion = self.configure_cardinal()
 
-        return Cardinal(name, None, age, region, influence, charisma, scholarship, discretion)
+        return Cardinal(name, None, age, region, influence, charisma, erudition, discretion)
+
+    def configure_cardinal(self):
+        influence = int(get_input("Influência", 0, 100))  # Conversão explícita para int
+        remaining = 200 - influence
+        charisma = int(get_input(f"Carisma (restam {remaining})", 0, remaining))  # Conversão explícita para int
+        erudition = int(get_input(f"Erudição (restam {remaining - charisma})", 0, remaining - charisma))  # Conversão explícita para int
+        discretion = int(get_input(f"Discrição (restam {remaining - charisma - erudition})", 0, remaining - charisma - erudition))  # Conversão explícita para int
+        return influence, charisma, erudition, discretion
 
     def choose_favorite_candidate(self):
         """Permite ao jogador escolher seu candidato favorito."""
