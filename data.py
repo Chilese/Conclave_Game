@@ -52,7 +52,7 @@ def get_influential_cardinals():
     for ideology in ideologies:
         for i in range(CARDINALS_PER_IDEOLOGY):
             name = f"Cardeal {chr(65 + i)} {ideology[:4]}"
-            cardinals.append(Cardinal(
+            cardinal = Cardinal(
                 name=name,
                 ideology=ideology,
                 age=random.choice(["Jovem", "Vétérano"]),
@@ -61,5 +61,6 @@ def get_influential_cardinals():
                 charisma=random.randint(50, 90),
                 scholarship=random.randint(50, 90),
                 discretion=random.randint(50, 90)
-            ))
+            )
+            cardinals.append(cardinal)
     return cardinals

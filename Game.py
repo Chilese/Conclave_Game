@@ -143,6 +143,7 @@ class Game:
         display_info(f"Interagindo com {target.name} ({target.archetype})")
         action = get_input("Escolha uma ação:", ["Persuadir", "Propor Aliança", "Manipular Rumores"], None)
 
+        # Calcula o impacto antes da ação
         calcular_previa_impacto(action, self.player, target, self.favorite_candidate)
 
         try:
@@ -151,6 +152,12 @@ class Game:
             display_info(f"Nenhuma facção encontrada para a ideologia {target.ideology}.")
             return
 
+        # Verificar consistência do objeto do candidato favorito
+        display_info(f"DEBUG: Candidato favorito: {self.favorite_candidate}")
+        display_info(f"DEBUG: Chaves do dicionário de suporte: {list(target_faction.candidate_support.keys())}")
+
+        # Executa a ação e registra o impacto
+        previous_support = target_faction.candidate_support.get(self.favorite_candidate, 0)
         if action == "Persuadir":
             persuade(self.player, target, self.favorite_candidate, self.factions)
             self.log_action(f"Você persuadiu {target.name}.")
@@ -160,6 +167,18 @@ class Game:
         elif action == "Manipular Rumores":
             manipulate_rumors(self.player, target, self.favorite_candidate, self.factions, self.candidates)
             self.log_action(f"Você manipulou rumores contra {target.name}.")
+
+        # Calcula o suporte após a ação
+        new_support = target_faction.candidate_support.get(self.favorite_candidate, 0)
+        change = new_support - previous_support
+        display_info(
+            f"Resultado da interação:\n"
+            f"  Suporte ao {self.favorite_candidate.name} na facção {target_faction.name}:\n"
+            f"    Antes: {previous_support:.2f}%\n"
+            f"    Depois: {new_support:.2f}%\n"
+            f"    Mudança: {change:.2f}%"
+        )
+        display_info(f"DEBUG: Suporte atualizado: {target_faction.candidate_support}")
 
     def display_faction_support(self):
         """Exibe o suporte percentual de cada candidato em cada facção, ordenado e com separadores."""

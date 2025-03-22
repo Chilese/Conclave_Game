@@ -10,3 +10,11 @@ class Cardinal:
         self.discretion = discretion    # 0 a 100
         self.archetype = archetype  # Apenas para cardeais influentes, None para o jogador
         self.vote_count = 0  # Contagem de votos recebidos
+
+    def __eq__(self, other):
+        if isinstance(other, Cardinal):
+            return self.name == other.name and self.ideology == other.ideology
+        return False
+
+    def __hash__(self):
+        return hash((self.name, self.ideology))
