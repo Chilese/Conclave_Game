@@ -11,18 +11,32 @@ def get_input(prompt, min_val, max_val, default=None):
         except ValueError:
             print("Digite um número válido.")
 
-def normalize_support(support_dict, normalization_factor=0.5):
+def normalize_support(support_dict, min_value=1.0):
     """
-    Normaliza os valores de suporte com uma abordagem mais suave.
+    Normaliza os valores de suporte apenas quando necessário,
+    preservando ao máximo as mudanças feitas.
     """
     total = sum(support_dict.values())
-    if total > 0:
-        excess = total - 100 if total > 100 else 0
-        if excess > 0:
-            # Reduz proporcionalmente apenas quando ultrapassar 100%
-            reduction_factor = 100 / total
-            for key in support_dict:
-                support_dict[key] *= reduction_factor
+    if total <= 0:
+        return
+        
+    if total > 100:
+        # Aplica redução proporcional apenas quando ultrapassar 100
+        factor = 100 / total
+        for candidate in support_dict:
+            support_dict[candidate] *= factor
+            support_dict[candidate] = max(min_value, support_dict[candidate])
+    
+    # Garante valores mínimos
+    for candidate in support_dict:
+        if support_dict[candidate] < min_value:
+            support_dict[candidate] = min_value
+    
+    # Ajuste final se necessário
+    total = sum(support_dict.values())
+    if abs(total - 100) > 0.01:
+        largest_key = max(support_dict, key=support_dict.get)
+        support_dict[largest_key] += (100 - total)
 
 def log_debug(message):
     DEBUG_MODE = True  # Alterar para False em produção

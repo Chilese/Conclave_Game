@@ -126,58 +126,78 @@ class Game:
     def dialogues_and_negotiations_phase(self):
         """Executa uma rodada de negociações."""
         self.rounds += 1
-        self.display_strategic_context()  # Exibe contexto estratégico
+        self.display_strategic_context()
         display_info(f"\nRodada {self.rounds} - Fase de Negociações:")
         
+        # Gera novo evento apenas no início da rodada
         if random.random() < 0.3 and self.events:
             event = random.choice(self.events)
             self.active_events.append({"event": event, "remaining": event.duration})
             display_info(f"Evento: {event.name}")
             event.apply(self.factions, self.influential_cardinals)
 
-        for active in self.active_events[:]:
-            active["remaining"] -= 1
-            if active["remaining"] <= 0:
-                display_info(f"Evento {active['event'].name} terminou.")
-                self.active_events.remove(active)
+        # Executa as interações do jogador
+        while True:
+            choice = show_menu("Escolha um cardeal para interagir:", [c.name for c in self.influential_cardinals])
+            target = self.influential_cardinals[choice]
+            display_info(f"Interagindo com {target.name} ({target.archetype})")
+            action = get_input("Escolha uma ação:", ["Persuadir", "Propor Aliança", "Manipular Rumores"], None)
 
-        choice = show_menu("Escolha um cardeal para interagir:", [c.name for c in self.influential_cardinals])
-        target = self.influential_cardinals[choice]
-        display_info(f"Interagindo com {target.name} ({target.archetype})")
-        action = get_input("Escolha uma ação:", ["Persuadir", "Propor Aliança", "Manipular Rumores"], None)
+            # Calcula o impacto antes da ação
+            proceed = calcular_previa_impacto(action, self.player, target, self.favorite_candidate)
+            if not proceed:
+                display_info("Ação cancelada. Escolha outro cardeal ou ação.")
+                continue  # Volta ao início do loop para nova escolha
+            
+            # Se chegou aqui, a ação foi confirmada
+            try:
+                target_faction = next(f for f in self.factions if f.ideology == target.ideology)
+            except StopIteration:
+                display_info(f"Nenhuma facção encontrada para a ideologia {target.ideology}.")
+                return
 
-        # Calcula o impacto antes da ação
-        calcular_previa_impacto(action, self.player, target, self.favorite_candidate)
+            # Executa a ação e registra o impacto
+            previous_support = target_faction.candidate_support.get(self.favorite_candidate, 0)
+            if action == "Persuadir":
+                persuade(self.player, target, self.favorite_candidate, self.factions)
+                self.log_action(f"Você persuadiu {target.name}.")
+            elif action == "Propor Aliança":
+                propose_alliance(self.player, target, self.favorite_candidate, self.factions)
+                self.log_action(f"Você propôs uma aliança com {target.name}.")
+            elif action == "Manipular Rumores":
+                manipulate_rumors(self.player, target, self.favorite_candidate, self.factions, self.candidates)
+                self.log_action(f"Você manipulou rumores contra {target.name}.")
 
-        try:
-            target_faction = next(f for f in self.factions if f.ideology == target.ideology)
-        except StopIteration:
-            display_info(f"Nenhuma facção encontrada para a ideologia {target.ideology}.")
-            return
+            # Calcula o suporte após a ação
+            new_support = target_faction.candidate_support.get(self.favorite_candidate, 0)
+            change = new_support - previous_support
 
-        # Executa a ação e registra o impacto
-        previous_support = target_faction.candidate_support.get(self.favorite_candidate, 0)
-        if action == "Persuadir":
-            persuade(self.player, target, self.favorite_candidate, self.factions)
-            self.log_action(f"Você persuadiu {target.name}.")
-        elif action == "Propor Aliança":
-            propose_alliance(self.player, target, self.favorite_candidate, self.factions)
-            self.log_action(f"Você propôs uma aliança com {target.name}.")
-        elif action == "Manipular Rumores":
-            manipulate_rumors(self.player, target, self.favorite_candidate, self.factions, self.candidates)
-            self.log_action(f"Você manipulou rumores contra {target.name}.")
+            display_info("\n=== Resultado da Interação ===")
+            display_info(f"Ação: {action}")
+            display_info(f"Alvo: {target.name}")
+            display_info(f"Resultado: {'Sucesso!' if change > 0 else 'Impacto Limitado' if change == 0 else 'Resultado Negativo!'}")
+            display_info(f"\nSuporte ao {self.favorite_candidate.name} na facção {target_faction.name}:")
+            display_info(f"  Antes: {previous_support:.1f}%")
+            display_info(f"  Depois: {new_support:.1f}%")
+            display_info(f"  Mudança: {change:+.1f}%")
+            
+            if change > 0:
+                display_info("\nSua ação foi bem sucedida e aumentou o suporte ao seu candidato!")
+            elif change < 0:
+                display_info("\nAtenção! Sua ação teve um efeito negativo e reduziu o suporte ao seu candidato.")
+            else:
+                display_info("\nSua ação teve um impacto neutro. Considere usar uma abordagem diferente da próxima vez.")
+            
+            display_info("\nDica: Compare o resultado real com a prévia para aprender como suas ações funcionam!")
+            break  # Sai do loop após uma ação bem-sucedida
 
-        # Calcula o suporte após a ação
-        new_support = target_faction.candidate_support.get(self.favorite_candidate, 0)
-        change = new_support - previous_support
-        display_info(
-            f"Resultado da interação:\n"
-            f"  Suporte ao {self.favorite_candidate.name} na facção {target_faction.name}:\n"
-            f"    Antes: {previous_support:.2f}%\n"
-            f"    Depois: {new_support:.2f}%\n"
-            f"    Mudança: {change:.2f}%"
-        )
-        display_info(f"DEBUG: Suporte atualizado: {target_faction.candidate_support}")
+        # Verifica e atualiza eventos APENAS ao final da rodada
+        if self.interactions_this_cycle >= 3:  # Última interação da rodada
+            for active in self.active_events[:]:
+                active["remaining"] -= 1
+                if active["remaining"] <= 0:
+                    display_info(f"Evento {active['event'].name} terminou.")
+                    self.active_events.remove(active)
 
     def display_faction_support(self):
         """Exibe o suporte percentual de cada candidato em cada facção, ordenado e com separadores."""
