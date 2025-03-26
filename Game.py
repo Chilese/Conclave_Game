@@ -54,12 +54,13 @@ class Game:
         return Cardinal(name, None, age, region, influence, charisma, erudition, discretion)
 
     def configure_cardinal(self):
-        influence = int(get_input("Influência", 0, 100))  # Conversão explícita para int
-        remaining = 200 - influence
-        charisma = int(get_input(f"Carisma (restam {remaining})", 0, remaining))  # Conversão explícita para int
-        erudition = int(get_input(f"Erudição (restam {remaining - charisma})", 0, remaining - charisma))  # Conversão explícita para int
-        discretion = int(get_input(f"Discrição (restam {remaining - charisma - erudition})", 0, remaining - charisma - erudition))  # Conversão explícita para int
-        return influence, charisma, erudition, discretion
+        remaining = 200
+        attributes = {}
+        for attr in ["Influência", "Carisma", "Erudição", "Discrição"]:
+            value = int(get_input(f"{attr} (restam {remaining})", 0, remaining))
+            attributes[attr] = value
+            remaining -= value
+        return attributes["Influência"], attributes["Carisma"], attributes["Erudição"], attributes["Discrição"]
 
     def choose_favorite_candidate(self):
         """Permite ao jogador escolher seu candidato favorito."""
@@ -151,10 +152,6 @@ class Game:
         except StopIteration:
             display_info(f"Nenhuma facção encontrada para a ideologia {target.ideology}.")
             return
-
-        # Verificar consistência do objeto do candidato favorito
-        display_info(f"DEBUG: Candidato favorito: {self.favorite_candidate}")
-        display_info(f"DEBUG: Chaves do dicionário de suporte: {list(target_faction.candidate_support.keys())}")
 
         # Executa a ação e registra o impacto
         previous_support = target_faction.candidate_support.get(self.favorite_candidate, 0)

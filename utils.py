@@ -17,6 +17,14 @@ def normalize_support(support_dict):
     if total > 0:
         for key in support_dict:
             support_dict[key] = (support_dict[key] / total) * 100
+    else:
+        for key in support_dict:
+            support_dict[key] = 100 / len(support_dict) if support_dict else 0
+
+def log_debug(message):
+    DEBUG_MODE = True  # Alterar para False em produção
+    if DEBUG_MODE:
+        print(f"DEBUG: {message}")
 
 def show_menu(prompt, options):
     display_info(prompt)

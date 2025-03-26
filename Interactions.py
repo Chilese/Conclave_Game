@@ -3,19 +3,6 @@ from Faction import Faction
 from Cardinal import Cardinal
 from utils import normalize_support, display_feedback, display_info
 
-def normalize_support(support_dict):
-    """Normaliza os valores de suporte para que somem 100%."""
-    total = sum(support_dict.values())
-    if total > 0:
-        for key in support_dict:
-            support_dict[key] = (support_dict[key] / total) * 100
-    else:
-        # Caso o total seja zero, distribui suporte igual para todos os candidatos
-        num_candidates = len(support_dict)
-        if num_candidates > 0:
-            for key in support_dict:
-                support_dict[key] = 100 / num_candidates
-
 def normalize_and_redistribute(faction, target, effect):
     """Normaliza e redistribui suporte em uma facção."""
     total_support = sum(faction.candidate_support.values())
@@ -28,26 +15,27 @@ def normalize_and_redistribute(faction, target, effect):
 def persuade(player, target, favorite_candidate, factions):
     """
     Aumenta o suporte ao candidato favorito do jogador na facção do cardeal-alvo.
-    Impacto baseado em charisma, compatibilidade ideológica e arquétipo.
+    Impacto baseado em carisma e compatibilidade ideológica.
     """
-    target_faction = next(f for f in factions if f.ideology == target.ideology)
+    try:
+        target_faction = next(f for f in factions if f.ideology == target.ideology)
+    except StopIteration:
+        display_info(f"Nenhuma facção encontrada para a ideologia {target.ideology}.")
+        return
+
     previous_support = target_faction.candidate_support.get(favorite_candidate, 0)
 
     # Calcula o impacto da persuasão
-    base_effect = 5.0
-    charisma_bonus = player.charisma // 20
+    base_effect = 10.0
+    charisma_bonus = player.charisma // 10
     effect = base_effect + charisma_bonus
     if favorite_candidate.ideology == target.ideology:
         effect *= 1.5
     else:
         effect *= 0.8
 
-    # Log do impacto calculado
-    display_info(f"DEBUG: Impacto calculado para persuasão: {effect:.2f}%")
-
     # Aplica o impacto
     target_faction.candidate_support[favorite_candidate] = min(100, previous_support + effect)
-    display_info(f"DEBUG: Suporte antes da normalização: {target_faction.candidate_support}")
     normalize_support(target_faction.candidate_support)
 
     new_support = target_faction.candidate_support[favorite_candidate]
@@ -56,14 +44,19 @@ def persuade(player, target, favorite_candidate, factions):
 def propose_alliance(player, target, favorite_candidate, factions):
     """
     Propõe uma aliança que beneficia o candidato do jogador e o cardeal-alvo.
-    Impacto baseado em influence, com risco se ideologias diferem.
+    Impacto baseado em influência, com risco se ideologias diferem.
     """
-    target_faction = next(f for f in factions if f.ideology == target.ideology)
+    try:
+        target_faction = next(f for f in factions if f.ideology == target.ideology)
+    except StopIteration:
+        display_info(f"Nenhuma facção encontrada para a ideologia {target.ideology}.")
+        return
+
     previous_support = target_faction.candidate_support.get(favorite_candidate, 0)
 
     # Calcula o impacto da aliança
-    base_effect = 10.0
-    influence_bonus = player.influence // 25
+    base_effect = 15.0
+    influence_bonus = player.influence // 15
     effect = base_effect + influence_bonus
     if favorite_candidate.ideology != target.ideology:
         effect *= 0.7  # Penalidade para ideologias diferentes
@@ -78,18 +71,23 @@ def propose_alliance(player, target, favorite_candidate, factions):
 def manipulate_rumors(player, target, favorite_candidate, factions, candidates):
     """
     Reduz o suporte a um cardeal rival, com chance de backfire.
-    Impacto baseado em discretion e scholarship.
+    Impacto baseado em discrição e erudição.
     """
-    target_faction = next(f for f in factions if f.ideology == target.ideology)
+    try:
+        target_faction = next(f for f in factions if f.ideology == target.ideology)
+    except StopIteration:
+        display_info(f"Nenhuma facção encontrada para a ideologia {target.ideology}.")
+        return
+
     previous_support = target_faction.candidate_support.get(target, 0)
 
     # Calcula o impacto da manipulação
-    base_effect = 15.0
-    discretion_bonus = player.discretion // 15
+    base_effect = 20.0
+    discretion_bonus = player.discretion // 10
     effect = base_effect + discretion_bonus
 
     # Ajustar chance de backfire
-    backfire_chance = 20 - (player.scholarship // 10)
+    backfire_chance = 25 - (player.scholarship // 10)
     if target.archetype == "Cautious Schemer":
         backfire_chance += 10
 

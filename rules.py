@@ -46,7 +46,9 @@ def calculate_votes(factions, round_number):
 
 def check_majority(candidate_votes, total_voters):
     """Verifica se há um vencedor com 2/3 dos votos."""
-    required_majority = int(total_voters * 2 / 3) + 1  # 138 para 206
+    if not candidate_votes:
+        return None
+    required_majority = int(total_voters * 2 / 3) + 1
     for candidate, votes in candidate_votes.items():
         if votes >= required_majority:
             return candidate
