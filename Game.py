@@ -107,21 +107,32 @@ class Game:
             display_info(f"- {action}")
 
     def display_strategic_context(self):
-        """Exibe o suporte atual ao candidato favorito e aos principais rivais."""
-        display_info(f"\nRodada {self.rounds} - Fase de Negociações:")
-        display_info("---------------------")
-        display_info(f"Suporte Atual ao Seu Candidato ({self.favorite_candidate.name}):")
+        """Exibe o contexto estratégico de forma mais clara."""
+        display_info(f"\nStatus do Conclave - Rodada {self.rounds}", separator=True)
+        
+        # Suporte ao candidato favorito
+        display_info("\n🎯 Seu Candidato:", separator=False)
+        display_info(f"  {self.favorite_candidate.name} ({self.favorite_candidate.ideology})")
+        
+        display_info("\nSuporte por Facção:", separator=False)
         for faction in self.factions:
             support = faction.candidate_support.get(self.favorite_candidate, 0)
-            display_info(f"- {faction.name}: {support:.2f}%")
+            bar = "█" * int(support/2)  # Barra de progresso visual
+            display_info(f"  {faction.name:12} [{bar:<50}] {support:.1f}%")
         
-        display_info("\nPrincipais Rivais:")
-        rivals = sorted(self.candidates, key=lambda c: sum(f.candidate_support.get(c, 0) for f in self.factions), reverse=True)[:3]
+        # Top 3 rivais
+        display_info("\n🔄 Principais Rivais:", separator=False)
+        rivals = sorted(
+            [c for c in self.candidates if c != self.favorite_candidate],
+            key=lambda c: sum(f.candidate_support.get(c, 0) for f in self.factions),
+            reverse=True
+        )[:3]
+        
         for rival in rivals:
-            if rival != self.favorite_candidate:
-                total_support = sum(f.candidate_support.get(rival, 0) for f in self.factions)
-                display_info(f"- {rival.name}: {total_support:.2f}% (total nas facções)")
-        display_info("---------------------")
+            total = sum(f.candidate_support.get(rival, 0) for f in self.factions)
+            display_info(f"  {rival.name:12} - {total:.1f}% de suporte total")
+        
+        display_info("", separator=True)
 
     def dialogues_and_negotiations_phase(self):
         """Executa uma rodada de negociações."""
