@@ -8,6 +8,7 @@ from data import get_initial_factions, get_influential_cardinals
 from ui import get_input, show_menu, display_info
 from rules import calculate_votes, check_majority
 from utils import normalize_support
+from events.GameEventManager import GameEventManager
 
 # Constantes para valores fixos
 TOTAL_CARDINALS = 206
@@ -31,6 +32,7 @@ class Game:
         self.rounds = 0
         self.interactions_this_cycle = 0
         self.action_log = []
+        self._setup_event_listeners()
 
     def _select_candidates(self):
         """Seleciona um cardeal influente de cada facção como candidato inicial."""
@@ -239,6 +241,29 @@ class Game:
                 if candidate in faction.candidate_support:
                     faction.candidate_support[candidate] += 10 + (self.rounds * 3)
             normalize_support(faction.candidate_support)
+
+    def _setup_event_listeners(self):
+        GameEventManager.subscribe("persuasion_attempt", self._handle_persuasion)
+        GameEventManager.subscribe("alliance_proposed", self._handle_alliance)
+        GameEventManager.subscribe("rumor_manipulation", self._handle_rumor)
+
+    def _handle_persuasion(self, event_data):
+        target = event_data["target"]
+        if target.discretion > 70:
+            self._trigger_reaction_event("counter_persuasion", event_data)
+
+    def _handle_alliance(self, event_data):
+        if event_data["new_support"] > event_data["previous_support"] * 1.5:
+            self._trigger_reaction_event("alliance_chain_reaction", event_data)
+
+    def _handle_rumor(self, event_data):
+        if not event_data["success"]:
+            self._trigger_reaction_event("rumor_backfire", event_data)
+
+    def _trigger_reaction_event(self, event_type, original_data):
+        for faction in self.factions:
+            if faction != original_data["faction"]:
+                self._apply_reaction_effect(event_type, faction, original_data)
 
     def run(self):
         """Executa o loop principal do jogo."""
