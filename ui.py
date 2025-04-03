@@ -70,3 +70,30 @@ def display_action_feedback(action_type, target, result, before, after):
         print("\n⚠️ A ação teve efeito negativo!")
     else:
         print("\nℹ️ A ação não teve efeito significativo.")
+
+def display_voting_results(candidate_votes, total_voters):
+    """Exibe os resultados da votação de forma organizada e clara."""
+    required_majority = int(total_voters * 2 / 3) + 1
+    display_info("\n=== Resultados da Votação ===", separator=True)
+    
+    # Ordenar candidatos por número de votos
+    sorted_results = sorted(candidate_votes.items(), key=lambda x: x[1], reverse=True)
+    
+    # Encontrar o líder
+    leader = sorted_results[0]
+    leader_percentage = (leader[1] / total_voters) * 100
+    
+    print(f"\n📊 Total de votos: {total_voters}")
+    print(f"🎯 Votos necessários para vitória: {required_majority} (2/3)")
+    print(f"\n👑 Líder atual: {leader[0].name}")
+    print(f"   Votos: {leader[1]} ({leader_percentage:.1f}%)")
+    
+    print("\nResultados completos:")
+    print("-" * 50)
+    for candidate, votes in sorted_results:
+        percentage = (votes / total_voters) * 100
+        bar_length = int(percentage / 2)
+        bar = "█" * bar_length + "░" * (50 - bar_length)
+        print(f"{candidate.name:15} [{bar}] {votes:3d} ({percentage:.1f}%)")
+    
+    print("-" * 50)

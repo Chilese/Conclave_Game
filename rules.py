@@ -29,27 +29,70 @@ def correct_final_discrepancy(candidate_votes, total_electors):
         candidate_votes[top_candidate] += difference
     return candidate_votes
 
+def redistribute_support_after_voting(factions, candidate_votes, total_voters):
+    """Redistribui o suporte com base nos resultados da votação."""
+    for faction in factions:
+        # Calcula o novo suporte baseado na proporção de votos
+        new_support = {}
+        total_votes = sum(candidate_votes.values())
+        
+        for candidate in faction.candidate_support:
+            votes = candidate_votes.get(candidate, 0)
+            # Calcula novo suporte mantendo um mínimo de 2%
+            support_percentage = max(2.0, (votes / total_voters) * 100)
+            new_support[candidate] = support_percentage
+            
+        # Normaliza o novo suporte para 100%
+        total_support = sum(new_support.values())
+        if total_support > 100:
+            factor = 100 / total_support
+            for candidate in new_support:
+                new_support[candidate] *= factor
+        
+        # Atualiza o suporte na facção
+        faction.candidate_support = new_support
+        
+    return True
+
 def calculate_votes(factions, round_number):
-    """Calcula os votos dos NPCs com total fixo de 205."""
-    total_electors = sum(faction.num_members for faction in factions)  # 205 NPCs
+    """Calcula os votos com peso progressivo por rodada."""
+    total_electors = sum(faction.num_members for faction in factions)
+    candidate_votes = {}
     
-    # Calcula votos iniciais
-    candidate_votes = calculate_initial_votes(factions)
+    # Aumenta o peso do suporte com o número da rodada
+    weight = 1.0 + (round_number * 0.15)  # Aumentado para 0.15
     
-    # Ajusta para totalizar exatamente 205 votos
+    for faction in factions:
+        faction_weight = faction.num_members * weight
+        for candidate, support in faction.candidate_support.items():
+            votes = (support / 100) * faction_weight
+            candidate_votes[candidate] = candidate_votes.get(candidate, 0) + votes
+    
+    # Arredonda os votos para números inteiros
+    for candidate in candidate_votes:
+        candidate_votes[candidate] = round(candidate_votes[candidate])
+    
     candidate_votes = adjust_votes_to_total(candidate_votes, total_electors)
-    
-    # Corrige qualquer discrepância final
-    candidate_votes = correct_final_discrepancy(candidate_votes, total_electors)
-    
-    return candidate_votes
+    return correct_final_discrepancy(candidate_votes, total_electors)
 
 def check_majority(candidate_votes, total_voters):
-    """Verifica se há um vencedor com 2/3 dos votos."""
+    """
+    Verifica se há um vencedor com 2/3 dos votos.
+    
+    Returns:
+        tuple: (vencedor, votos_necessarios, lider_atual)
+        - vencedor: Cardinal ou None se não houver vencedor
+        - votos_necessarios: número de votos necessários para vitória
+        - lider_atual: Cardinal com mais votos atualmente
+    """
     if not candidate_votes:
-        return None
+        return None, 0, None
+        
     required_majority = int(total_voters * 2 / 3) + 1
+    current_leader = max(candidate_votes.items(), key=lambda x: x[1])[0]  # Pega apenas o Cardinal, não os votos
+    
     for candidate, votes in candidate_votes.items():
         if votes >= required_majority:
-            return candidate
-    return None
+            return candidate, required_majority, current_leader
+            
+    return None, required_majority, current_leader

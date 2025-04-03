@@ -11,10 +11,8 @@ def get_input(prompt, min_val, max_val, default=None):
         except ValueError:
             print("Digite um número válido.")
 
-def normalize_support(support_dict, min_value=2.0):  # Aumentado valor mínimo
-    """
-    Normaliza os valores de suporte com logs detalhados.
-    """
+def normalize_support(support_dict, min_value=2.0):
+    """Normaliza os valores de suporte garantindo impacto mínimo das ações."""
     log_debug("\n=== INÍCIO DA NORMALIZAÇÃO ===")
     log_debug("Valores iniciais:")
     for candidate, support in support_dict.items():
@@ -28,33 +26,18 @@ def normalize_support(support_dict, min_value=2.0):  # Aumentado valor mínimo
         return
         
     if total > 100:
-        log_debug(f"Total > 100% ({total:.2f}%) - aplicando normalização")
-        factor = 100 / total
-        log_debug(f"Fator de normalização: {factor:.4f}")
-        
+        excess = total - 100
+        # Distribuir o excesso proporcionalmente
         for candidate in support_dict:
-            old_value = support_dict[candidate]
-            # Reduz menos agressivamente valores altos
-            if old_value > 50:
-                support_dict[candidate] = old_value * (0.8 + (0.2 * factor))
-            else:
-                support_dict[candidate] *= factor
-            support_dict[candidate] = max(min_value, support_dict[candidate])
+            reduction = (support_dict[candidate] / total) * excess
+            support_dict[candidate] = max(min_value, support_dict[candidate] - reduction)
     
-    # Garantir valores mínimos
-    for candidate in support_dict:
-        if support_dict[candidate] < min_value:
-            log_debug(f"Ajustando valor mínimo para {candidate.name}: {support_dict[candidate]:.2f}% -> {min_value:.2f}%")
-            support_dict[candidate] = min_value
-    
-    # Ajuste final
+    # Garantir que a soma seja 100%
     total = sum(support_dict.values())
-    if abs(total - 100) > 0.01:
-        largest_key = max(support_dict, key=support_dict.get)
-        adjustment = 100 - total
-        old_value = support_dict[largest_key]
-        support_dict[largest_key] += adjustment
-        log_debug(f"Ajuste final no maior valor ({largest_key.name}): {old_value:.2f}% -> {support_dict[largest_key]:.2f}%")
+    if total != 100:
+        factor = 100 / total
+        for candidate in support_dict:
+            support_dict[candidate] = max(min_value, support_dict[candidate] * factor)
     
     log_debug("\nValores finais após normalização:")
     for candidate, support in support_dict.items():

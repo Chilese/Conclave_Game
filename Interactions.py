@@ -41,27 +41,43 @@ def normalize_and_redistribute(faction, target, effect):
     normalize_support(faction.candidate_support)
 
 def apply_action_impact(faction, target, favorite_candidate, effect, success_chance):
-    """
-    Aplica o impacto da ação com garantia de mudança mínima.
-    """
+    """Aplica o impacto da ação com garantia de mudança."""
+    log_debug(f"\nAplicando impacto da ação:")
+    log_debug(f"Efeito base: {effect:.2f}%")
+    log_debug(f"Chance de sucesso: {success_chance}%")
+
     if random.random() <= success_chance / 100:
-        # Garante mudança mínima de 5% em caso de sucesso
-        min_change = 5.0
+        # Garantir impacto mínimo significativo
+        min_change = 10.0
         base_change = max(effect * (success_chance / 100), min_change)
         
-        # Reduz suporte de outros candidatos
-        for candidate in faction.candidate_support:
-            if candidate != favorite_candidate:
-                current = faction.candidate_support[candidate]
-                reduction = current * 0.1  # 10% de redução
-                faction.candidate_support[candidate] = max(0, current - reduction)
-        
-        # Aumenta suporte ao candidato favorito
         current_support = faction.candidate_support[favorite_candidate]
-        faction.candidate_support[favorite_candidate] = min(100, current_support + base_change)
+        new_support = min(100, current_support + base_change)
         
+        # Calcula quanto suporte precisa ser redistribuído
+        support_to_redistribute = new_support - current_support
+        
+        # Atualiza o suporte do candidato favorito
+        faction.candidate_support[favorite_candidate] = new_support
+        
+        # Redistribui o suporte removido dos outros proporcionalmente
+        others = [c for c in faction.candidate_support if c != favorite_candidate]
+        if others:
+            reduction_per_candidate = support_to_redistribute / len(others)
+            for other in others:
+                current = faction.candidate_support[other]
+                faction.candidate_support[other] = max(2.0, current - abs(reduction_per_candidate))
+        
+        log_debug(f"Impacto aplicado: +{base_change:.2f}%")
         return True, base_change
+    
+    log_debug("Ação falhou")
     return False, 0.0
+
+def display_action_result(success, impact, reason=None):
+    if not success:
+        display_info(f"\nAção falhou: {reason or 'Chance insuficiente'}")
+    display_info(f"Impacto: {impact:+.1f}%")
 
 def persuade(player, target, favorite_candidate, factions):
     log_debug("\n=== INÍCIO DA PERSUASÃO ===")
@@ -212,53 +228,54 @@ def manipulate_rumors(player, target, favorite_candidate, factions, candidates):
     new_support = target_faction.candidate_support.get(target, 0)
     display_feedback("Manipulação", target.name, target_faction.name, previous_support, new_support)
 
-def calcular_previa_impacto(action, player, target, candidate):
+def calcular_previa_impacto(action_idx, player, target, candidate):
     """Calcula e exibe uma prévia do possível impacto da ação."""
     base_effect = 0
     chance_sucesso = 0
     
-    # Corrigir a comparação da ação
-    if action == "Persuadir" or action == 0:  # Aceita tanto string quanto índice
+    action_names = {
+        0: "Persuadir",
+        1: "Propor Aliança", 
+        2: "Manipular Rumores"
+    }
+    
+    action_name = action_names[action_idx]
+    
+    if action_idx == 0:  # Persuadir
         base_effect = 25.0 + (player.charisma // 5)
         chance_sucesso = min(85, 50 + (player.charisma // 2))
-        if target.ideology == candidate.ideology:  # Corrigido para usar ideology do candidato
+        if target.ideology == candidate.ideology:
             base_effect *= 2.0
             chance_sucesso += 10
-        
-    elif action == "Propor Aliança" or action == 1:
+            
+    elif action_idx == 1:  # Propor Aliança
         base_effect = 30.0 + (player.influence // 8)
         chance_sucesso = min(90, 60 + (player.influence // 2))
         if target.ideology != candidate.ideology:
             base_effect *= 0.8
             chance_sucesso -= 15
             
-        display_info("\nFatores que influenciam:")
-        display_info(f"- Sua Influência ({player.influence}) adiciona {player.influence // 8} ao impacto base")
-        if target.ideology != candidate.ideology:
-            display_info("- Ideologia diferente: Impacto reduzido em 20%")
-        display_info(f"- Chance de sucesso: {chance_sucesso}%")
-            
-    elif action == "Manipular Rumores" or action == 2:
+    else:  # Manipular Rumores
         base_effect = 35.0 + (player.discretion // 5)
         chance_sucesso = min(80, 40 + (player.scholarship // 2))
         backfire_chance = max(5, 20 - (player.scholarship // 5))
         
     display_info("\n=== Prévia do Impacto da Ação ===")
-    display_info(f"Ação: {action}")
+    display_info(f"Ação: {action_name}")
     display_info(f"Alvo: {target.name} ({target.ideology})")
     display_info(f"Impacto Base Estimado: {base_effect:.1f}%")
     display_info(f"Chance de Sucesso: {chance_sucesso}%")
     
-    if action == "Manipular Rumores":
+    if action_idx == 2:  # Manipular Rumores
         display_info(f"Risco de Backfire: {backfire_chance}%")
         display_info("Atenção: Em caso de backfire, seu próprio candidato perde suporte!")
     
     display_info("\nFatores que influenciam:")
-    if action == "Persuadir":
+    if action_idx == 0:  # Persuadir
         display_info(f"- Seu Carisma ({player.charisma}) adiciona {player.charisma // 5} ao impacto base")
         if target.ideology == player.ideology:
             display_info("- Mesma ideologia: Impacto dobrado!")
-    elif action == "Propor Aliança":
+    elif action_idx == 1:  # Propor Aliança
         display_info(f"- Sua Influência ({player.influence}) adiciona {player.influence // 8} ao impacto base")
         if target.ideology != player.ideology:
             display_info("- Ideologia diferente: Impacto reduzido em 20%")

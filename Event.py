@@ -1,12 +1,30 @@
 from ui import display_info
 import random
+from typing import List, Dict, Optional
+from dataclasses import dataclass
+from Cardinal import Cardinal
+
+@dataclass
+class EventEffect:
+    attribute: str
+    value: float
+    duration: int
 
 class Event:
-    def __init__(self, name, duration, event_type, target_type="faction"):
+    """
+    Representa um evento no jogo com seus efeitos e duração.
+    """
+    def __init__(self, name: str, duration: int, event_type: str, target_type: str = "faction"):
         self.name = name
         self.duration = duration
         self.type = event_type  # "positive", "negative", "neutral"
         self.target_type = target_type  # "faction", "cardinal", "global"
+        self.effects: List[EventEffect] = []
+        
+    def add_effect(self, attribute: str, value: float, duration: Optional[int] = None) -> None:
+        """Adiciona um efeito ao evento."""
+        effect_duration = duration or self.duration
+        self.effects.append(EventEffect(attribute, value, effect_duration))
 
     def apply(self, factions, influential_cardinals):
         """Aplica o evento com base no nome, recebendo apenas os dados necessários."""

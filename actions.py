@@ -1,34 +1,41 @@
 from game_mechanics import apply_action_impact, update_support
 
 def execute_action(cardeal_origem, cardeal_alvo, acao_tipo, game_state):
-    # Base impacts por tipo de ação aumentados
+    # Reduz os impactos base
     impacts = {
-        'persuadir': 25,        # Aumentado de 15
-        'propor_alianca': 35,   # Aumentado de 20
-        'manipular_rumores': 45 # Aumentado de 25
+        'persuadir': {'base': 15, 'min': 5},        
+        'propor_alianca': {'base': 20, 'min': 8},   
+        'manipular_rumores': {'base': 25, 'min': 10} 
     }
     
-    # Obtém impacto base
-    base_impact = impacts[acao_tipo]
+    if acao_tipo not in impacts:
+        return {
+            'success': False,
+            'impact': 0,
+            'message': 'Tipo de ação inválido.'
+        }
     
-    # Aplica o impacto usando a nova mecânica
-    impact = apply_action_impact(cardeal_origem, cardeal_alvo, acao_tipo, base_impact)
+    # Obtém impacto base e mínimo
+    action_values = impacts[acao_tipo]
+    base_impact = action_values['base']
+    min_impact = action_values['min']
+    
+    # Aplica o impacto usando a mecânica
+    impact = max(min_impact, apply_action_impact(cardeal_origem, cardeal_alvo, acao_tipo, base_impact))
     
     # Atualiza o suporte para a facção apropriada
-    faction = cardeal_alvo.ideologia.lower()
-    
-    # Aplica o impacto mesmo se negativo
-    if impact != 0:
-        update_support(game_state.faction_support[faction], cardeal_alvo, impact)
-        
+    try:
+        faction = next(f for f in game_state.factions if f.ideology == cardeal_alvo.ideology)
+        update_support(faction.candidate_support, cardeal_alvo, impact)
+    except StopIteration:
         return {
-            'success': impact > 0,
-            'impact': impact,
-            'message': f'{"Sucesso" if impact > 0 else "Falha"}! Impacto: {impact:.1f}%'
+            'success': False,
+            'impact': 0,
+            'message': 'Facção não encontrada.'
         }
     
     return {
-        'success': False,
-        'impact': 0,
-        'message': 'A ação não teve efeito.'
+        'success': impact > 0,
+        'impact': impact,
+        'message': f'{"Sucesso" if impact > 0 else "Falha"}! Impacto: {impact:.1f}%'
     }

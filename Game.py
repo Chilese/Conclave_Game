@@ -5,10 +5,11 @@ from Faction import Faction
 from Event import Event
 from Interactions import persuade, propose_alliance, manipulate_rumors, calcular_previa_impacto
 from data import get_initial_factions, get_influential_cardinals
-from ui import get_input, show_menu, display_info
+from ui import get_input, show_menu, display_info, display_voting_results
 from rules import calculate_votes, check_majority
 from utils import normalize_support
 from events.GameEventManager import GameEventManager
+from actions import execute_action  # Adicionar esta importação
 
 # Constantes para valores fixos
 TOTAL_CARDINALS = 206
@@ -147,68 +148,48 @@ class Game:
             display_info(f"Evento: {event.name}")
             event.apply(self.factions, self.influential_cardinals)
 
+        # Mapeamento de índices para tipos de ação
+        action_types = {
+            0: 'persuadir',
+            1: 'propor_alianca',
+            2: 'manipular_rumores'
+        }
+
         # Executa as interações do jogador
-        while True:
+        while self.interactions_this_cycle < 3:
             choice = show_menu("Escolha um cardeal para interagir:", [c.name for c in self.influential_cardinals])
             target = self.influential_cardinals[choice]
             display_info(f"Interagindo com {target.name} ({target.archetype})")
-            action = get_input("Escolha uma ação:", ["Persuadir", "Propor Aliança", "Manipular Rumores"], None)
+            action_idx = get_input("Escolha uma ação:", ["Persuadir", "Propor Aliança", "Manipular Rumores"], None)
+
+            # Converte o índice da ação para o tipo de ação
+            action_type = action_types[action_idx]
 
             # Calcula o impacto antes da ação
-            proceed = calcular_previa_impacto(action, self.player, target, self.favorite_candidate)
+            proceed = calcular_previa_impacto(action_idx, self.player, target, self.favorite_candidate)
             if not proceed:
                 display_info("Ação cancelada. Escolha outro cardeal ou ação.")
-                continue  # Volta ao início do loop para nova escolha
+                continue
             
-            # Se chegou aqui, a ação foi confirmada
-            try:
-                target_faction = next(f for f in self.factions if f.ideology == target.ideology)
-            except StopIteration:
-                display_info(f"Nenhuma facção encontrada para a ideologia {target.ideology}.")
-                return
-
-            # Executa a ação e registra o impacto
-            previous_support = target_faction.candidate_support.get(self.favorite_candidate, 0)
-            if action == "Persuadir":
-                persuade(self.player, target, self.favorite_candidate, self.factions)
-                self.log_action(f"Você persuadiu {target.name}.")
-            elif action == "Propor Aliança":
-                propose_alliance(self.player, target, self.favorite_candidate, self.factions)
-                self.log_action(f"Você propôs uma aliança com {target.name}.")
-            elif action == "Manipular Rumores":
-                manipulate_rumors(self.player, target, self.favorite_candidate, self.factions, self.candidates)
-                self.log_action(f"Você manipulou rumores contra {target.name}.")
-
-            # Calcula o suporte após a ação
-            new_support = target_faction.candidate_support.get(self.favorite_candidate, 0)
-            change = new_support - previous_support
-
-            display_info("\n=== Resultado da Interação ===")
-            display_info(f"Ação: {action}")
-            display_info(f"Alvo: {target.name}")
-            display_info(f"Resultado: {'Sucesso!' if change > 0 else 'Impacto Limitado' if change == 0 else 'Resultado Negativo!'}")
-            display_info(f"\nSuporte ao {self.favorite_candidate.name} na facção {target_faction.name}:")
-            display_info(f"  Antes: {previous_support:.1f}%")
-            display_info(f"  Depois: {new_support:.1f}%")
-            display_info(f"  Mudança: {change:+.1f}%")
+            # Executa a ação usando o tipo de ação correto
+            result = execute_action(self.player, target, action_type, self)
             
-            if change > 0:
-                display_info("\nSua ação foi bem sucedida e aumentou o suporte ao seu candidato!")
-            elif change < 0:
-                display_info("\nAtenção! Sua ação teve um efeito negativo e reduziu o suporte ao seu candidato.")
+            if result['success']:
+                self.interactions_this_cycle += 1
+                display_info(result['message'])
+                display_info(f"Interações restantes neste ciclo: {3 - self.interactions_this_cycle}")
+                
+                if self.interactions_this_cycle >= 3:
+                    break
             else:
-                display_info("\nSua ação teve um impacto neutro. Considere usar uma abordagem diferente da próxima vez.")
-            
-            display_info("\nDica: Compare o resultado real com a prévia para aprender como suas ações funcionam!")
-            break  # Sai do loop após uma ação bem-sucedida
+                display_info(f"Ação falhou: {result['message']}")
 
-        # Verifica e atualiza eventos APENAS ao final da rodada
-        if self.interactions_this_cycle >= 3:  # Última interação da rodada
-            for active in self.active_events[:]:
-                active["remaining"] -= 1
-                if active["remaining"] <= 0:
-                    display_info(f"Evento {active['event'].name} terminou.")
-                    self.active_events.remove(active)
+        # Verifica e atualiza eventos apenas ao final da rodada
+        for active in self.active_events[:]:
+            active["remaining"] -= 1
+            if active["remaining"] <= 0:
+                display_info(f"Evento {active['event'].name} terminou.")
+                self.active_events.remove(active)
 
     def display_faction_support(self):
         """Exibe o suporte percentual de cada candidato em cada facção, ordenado e com separadores."""
@@ -239,11 +220,10 @@ class Game:
         total_votes = sum(candidate_votes.values())
         if total_votes != TOTAL_CARDINALS:
             raise ValueError(f"Erro: Total de votos deve ser {TOTAL_CARDINALS}, mas é {total_votes}")
-        display_info(f"Total de votos computados: {total_votes}")
-        for candidate, votes in candidate_votes.items():
-            display_info(f"{candidate.name}: {votes} votos")
-            candidate.vote_count = votes
-
+        
+        # Usar nova função de exibição
+        display_voting_results(candidate_votes, total_votes)
+        
         display_info(f"\nResumo da Rodada {self.rounds + 1}:")
         for faction in self.factions:
             display_info(f"\n{faction.name} ({faction.ideology}):")
@@ -252,12 +232,15 @@ class Game:
         self.log_action(f"Resumo da Rodada {self.rounds + 1} exibido.")
 
         total_voters = self.total_cardinals
-        winner = check_majority(candidate_votes, total_voters)
+        winner, required_votes, current_leader = check_majority(candidate_votes, total_voters)
+        
         if winner:
             display_info(f"{winner.name} foi eleito Papa com {candidate_votes[winner]} votos!")
+            display_info(f"Votos necessários para vitória: {required_votes}")
             return True
         else:
-            display_info("Nenhum candidato alcançou a maioria de 2/3. Nova rodada de negociações.")
+            display_info(f"Nenhum candidato alcançou a maioria de {required_votes} votos.")
+            display_info(f"Líder atual: {current_leader.name} com {candidate_votes[current_leader]} votos")
             self.adjust_faction_support(candidate_votes)
             return False
 
@@ -300,16 +283,17 @@ class Game:
         """Executa o loop principal do jogo."""
         self.start_game()
         while True:
-            while self.interactions_this_cycle < 3:
-                self.dialogues_and_negotiations_phase()
-                self.interactions_this_cycle += 1
-                display_info(f"Interações concluídas no ciclo: {self.interactions_this_cycle}/3")
-
+            # Reseta o contador no início de cada rodada
+            self.interactions_this_cycle = 0
+            
+            # Executa uma única rodada de negociações
+            self.dialogues_and_negotiations_phase()
+            
+            # Inicia a votação após as 3 interações
             display_info("\nIniciando a votação...")
             if self.voting_rounds_phase():
                 display_info("Um candidato venceu! O jogo terminou.")
                 break
             else:
                 display_info("Nenhuma maioria alcançada. Retornando para mais negociações...")
-                self.interactions_this_cycle = 0
             self.display_action_log()
