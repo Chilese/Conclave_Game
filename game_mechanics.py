@@ -13,11 +13,11 @@ def apply_action_impact(cardeal_origem, cardeal_alvo, acao, base_impact):
     MAX_IMPACT = 50.0
     total_impact = min(MAX_IMPACT, max(min_impact, base_impact * (1 + influence_mod + charisma_mod)))
     
-    # Aplica modificador de ideologia
-    if cardeal_origem.ideology != cardeal_alvo.ideology:
-        total_impact *= 0.7  # Redução menor por ideologia diferente
+    # Aumentar o impacto para ações bem-sucedidas
+    if cardeal_origem.ideology == cardeal_alvo.ideology:
+        total_impact *= 1.5  # Bônus maior para mesma ideologia
     else:
-        total_impact *= 1.2  # Bônus por mesma ideologia
+        total_impact *= 1.1  # Redução menor para ideologias diferentes
     
     # Chance de sucesso base + modificador de discrição
     success_chance = 0.8 + (discretion_mod * 0.2)  # Aumentada chance base
@@ -27,20 +27,23 @@ def apply_action_impact(cardeal_origem, cardeal_alvo, acao, base_impact):
         return max(min_impact, total_impact)
     return -min_impact  # Retorna impacto negativo em caso de falha
 
-def update_support(faction_support, cardeal_alvo, impact):
+def update_support(faction_support, cardeal_alvo, impact, favorite_candidate=None):
     # Aplica o impacto no suporte da facção
     if impact > 0:
-        # Garante que o suporte mínimo seja mantido para todos
         MIN_SUPPORT = 5.0
         current_support = faction_support.get(cardeal_alvo, 0)
         faction_support[cardeal_alvo] = min(100, max(MIN_SUPPORT, current_support + impact))
         
-        # Redistribui o excesso de forma mais suave
+        # Aumenta o suporte ao candidato favorito
+        if favorite_candidate and cardeal_alvo == favorite_candidate:
+            faction_support[cardeal_alvo] += impact * 0.8  # Bônus maior para o favorito
+        
+        # Redistribui o excesso de forma mais justa
         total = sum(faction_support.values())
         if total > 100:
             excess = total - 100
             for cardeal in faction_support:
-                if cardeal != cardeal_alvo:
+                if cardeal != cardeal_alvo and cardeal != favorite_candidate:
                     current = faction_support[cardeal]
                     reduction = (excess * current) / total
                     faction_support[cardeal] = max(MIN_SUPPORT, current - reduction)

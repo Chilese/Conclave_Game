@@ -29,30 +29,29 @@ def correct_final_discrepancy(candidate_votes, total_electors):
         candidate_votes[top_candidate] += difference
     return candidate_votes
 
-def redistribute_support_after_voting(factions, candidate_votes, total_voters):
+def redistribute_support_after_voting(factions, candidate_votes, total_voters, favorite_candidate):
     """Redistribui o suporte com base nos resultados da votação."""
     for faction in factions:
-        # Calcula o novo suporte baseado na proporção de votos
         new_support = {}
         total_votes = sum(candidate_votes.values())
         
         for candidate in faction.candidate_support:
             votes = candidate_votes.get(candidate, 0)
-            # Calcula novo suporte mantendo um mínimo de 2%
             support_percentage = max(2.0, (votes / total_voters) * 100)
             new_support[candidate] = support_percentage
-            
-        # Normaliza o novo suporte para 100%
+        
+        # Normaliza o suporte
         total_support = sum(new_support.values())
         if total_support > 100:
             factor = 100 / total_support
             for candidate in new_support:
                 new_support[candidate] *= factor
         
-        # Atualiza o suporte na facção
-        faction.candidate_support = new_support
+        # Protege o suporte ao candidato favorito
+        if favorite_candidate in new_support:
+            new_support[favorite_candidate] = max(20.0, new_support[favorite_candidate] + 10.0)
         
-    return True
+        faction.candidate_support = new_support
 
 def calculate_votes(factions, round_number):
     """Calcula os votos com peso progressivo por rodada."""

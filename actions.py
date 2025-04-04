@@ -26,7 +26,7 @@ def execute_action(cardeal_origem, cardeal_alvo, acao_tipo, game_state):
     # Atualiza o suporte para a facção apropriada
     try:
         faction = next(f for f in game_state.factions if f.ideology == cardeal_alvo.ideology)
-        update_support(faction.candidate_support, cardeal_alvo, impact)
+        update_support(faction.candidate_support, cardeal_alvo, impact, game_state.favorite_candidate)
     except StopIteration:
         return {
             'success': False,

@@ -55,5 +55,5 @@ class Event:
         faction = random.choice(factions)
         for cardinal in influential_cardinals:
             if cardinal.ideology == faction.ideology:
-                cardinal.discretion = max(0, cardinal.discretion - 10)
-        display_info(f"Crise de Confiança! Discrição dos cardeais {faction.name} caiu.")
+                cardinal.discretion = max(0, cardinal.discretion - 20)  # Aumentar redução
+        display_info(f"Crise de Confiança! Discrição dos cardeais {faction.name} caiu drasticamente.")

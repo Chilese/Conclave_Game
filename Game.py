@@ -102,7 +102,7 @@ class Game:
 
     def log_action(self, message):
         """Registra uma ação no log."""
-        self.game_log.log_action(message)
+        self.game_log.log_message(message)
 
     def display_action_log(self):
         """Exibe o log de ações para o jogador."""
@@ -127,7 +127,7 @@ class Game:
         display_info("\nSuporte por Facção:", separator=False)
         for faction in self.factions:
             support = faction.candidate_support.get(self.favorite_candidate, 0)
-            bar = "█" * int(support/2)  # Barra de progresso visual
+            bar = "█" * int(support / 2)  # Barra de progresso visual
             display_info(f"  {faction.name:12} [{bar:<50}] {support:.1f}%")
         
         # Top 3 rivais
@@ -168,7 +168,7 @@ class Game:
         while self.interactions_this_cycle < 3:
             choice = show_menu("Escolha um cardeal para interagir:", [c.name for c in self.influential_cardinals])
             target = self.influential_cardinals[choice]
-            display_info(f"Interagindo com {target.name} ({target.archetype})")
+            display_info(f"Interagindo com {target.name} ({target.ideology})")
             action_idx = get_input("Escolha uma ação:", ["Persuadir", "Propor Aliança", "Manipular Rumores"], None)
 
             # Converte o índice da ação para o tipo de ação
@@ -238,7 +238,7 @@ class Game:
             display_info(f"\n{faction.name} ({faction.ideology}):")
             for candidate, support in faction.candidate_support.items():
                 display_info(f"  {candidate.name}: {support:.2f}%")
-        self.log_action(f"Resumo da Rodada {self.rounds + 1} exibido.")
+        self.game_log.log_message(f"Resumo da Rodada {self.rounds + 1} exibido.")
 
         total_voters = self.total_cardinals
         winner, required_votes, current_leader = check_majority(candidate_votes, total_voters)
@@ -263,6 +263,14 @@ class Game:
             for candidate, votes in top_candidates:
                 if candidate in faction.candidate_support:
                     faction.candidate_support[candidate] += 10 + (self.rounds * 3)
+            
+            # Protege o suporte ao candidato favorito manualmente
+            if self.favorite_candidate in faction.candidate_support:
+                faction.candidate_support[self.favorite_candidate] = max(
+                    15.0, faction.candidate_support[self.favorite_candidate] + 10.0
+                )
+            
+            # Normaliza o suporte sem o argumento `favorite_candidate`
             normalize_support(faction.candidate_support)
 
     def _setup_event_listeners(self):
