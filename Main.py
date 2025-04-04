@@ -1,16 +1,20 @@
-from Game import Game
+from src.core.game import Game
+from src.utils.game_logging import GameLogger
+
+def main():
+    """Função principal que inicia o jogo."""
+    logger = GameLogger()
+    logger.info("Iniciando Conclave Game")
+    
+    try:
+        game = Game()
+        game.run()
+    except KeyboardInterrupt:
+        logger.info("Jogo interrompido pelo usuário")
+    except Exception as e:
+        logger.error(f"Erro não esperado: {str(e)}")
+    finally:
+        logger.info("Encerrando Conclave Game")
 
 if __name__ == "__main__":
-    game = Game()
-    game.run()
-    # Log para verificar mudanças no suporte
-    for faction in game.factions:
-        print(f"Suporte atualizado na facção {faction.name}: {faction.candidate_support}")
-    # Adicionar logs detalhados por candidato
-    for faction in game.factions:
-        for candidate, support in faction.candidate_support.items():
-            print(f"Facção {faction.name} - Candidato {candidate.name}: Suporte {support:.2f}%")
-
-def process_voting_results(voting_data):
-    # ...existing code...
-    print("Após a votação, o suporte foi redistribuído com base nos votos recebidos por cada candidato.")
+    main()

@@ -1,34 +1,31 @@
-def get_input(prompt, options, default=None):
-    display_info(prompt)
-    if isinstance(options, list):
-        display_options(options)  # Reutiliza a função auxiliar para exibir opções
+def get_input(prompt, min_val=None, max_val=None, options=None, default=None):
+    """Função unificada de input que aceita tanto opções numéricas quanto lista de escolhas"""
+    if options is not None:
+        display_info(prompt)
+        display_options(options)
         while True:
             choice = input("Escolha (número): ")
+            if choice.lower() in ['q', 'quit', 'sair']:
+                return -1
             try:
                 idx = int(choice)
                 if 0 <= idx < len(options):
-                    return idx  # Retorna o índice como inteiro
-                else:
-                    display_info(f"Por favor, escolha um número entre 0 e {len(options)-1}.")
+                    return idx
+                display_info(f"Por favor, escolha um número entre 0 e {len(options)-1}.")
             except ValueError:
                 display_info("Entrada inválida. Digite um número.")
-    return input("Digite: ") or default
-
-def show_menu(prompt, options):
-    """Exibe menu com formatação melhorada."""
-    display_info(prompt, separator=True)
-    display_options(options)
-    while True:
-        try:
-            choice = input("Digite o número da sua escolha: ")
-            if choice.lower() in ['q', 'quit', 'sair']:
-                return -1
-            idx = int(choice)
-            if 0 <= idx < len(options):
-                return idx
-            print(f"\nEscolha inválida. Digite um número entre 0 e {len(options)-1}.")
-        except ValueError:
-            print("\nEntrada inválida. Digite um número ou 'q' para sair.")
+    else:
+        while True:
+            try:
+                value = input(f"{prompt} ({min_val}-{max_val}): ")
+                if value == "" and default is not None:
+                    return default
+                value = int(value)
+                if min_val <= value <= max_val:
+                    return value
+                print(f"Digite um valor entre {min_val} e {max_val}.")
+            except ValueError:
+                print("Digite um número válido.")
 
 def display_info(message, separator=False):
     """Exibe informação com separador opcional."""
@@ -49,32 +46,29 @@ def display_options(options, show_attributes=False):
             print(f"  [{i}] {option.name} ({ideology})")
     print()
 
-def display_action_feedback(action_type, target, result, before, after):
-    """Exibe feedback de ação com formatação melhorada."""
-    change = after - before
+def display_feedback(action: str, candidate_name: str, faction_name: str, previous_support: float, new_support: float) -> None:
+    """Exibe feedback sobre o impacto de uma ação no suporte de um candidato."""
+    change = new_support - previous_support
     result_text = "Sucesso!" if change > 0 else "Falha" if change < 0 else "Neutro"
-    feedback = (
+    message = (
         f"\nResultado da Ação\n"
-        f"Tipo: {action_type}\n"
-        f"Alvo: {target}\n"
+        f"Tipo: {action}\n"
+        f"Candidato: {candidate_name}\n"
+        f"Facção: {faction_name}\n"
         f"\nResultado: {result_text}\n"
         f"\nMudança de Suporte:\n"
-        f"  Anterior: {before:.1f}%\n"
-        f"  Atual:    {after:.1f}%\n"
+        f"  Anterior: {previous_support:.1f}%\n"
+        f"  Atual:    {new_support:.1f}%\n"
         f"  Variação: {change:+.1f}%\n"
     )
-    print(feedback)
-    return feedback
+    print(message)
 
 def display_voting_results(candidate_votes, total_voters):
     """Exibe resultados da votação com formatação melhorada."""
     required_majority = int(total_voters * 2 / 3) + 1
     display_info("\n=== Resultados da Votação ===", separator=True)
     
-    # Ordenar candidatos por número de votos
     sorted_results = sorted(candidate_votes.items(), key=lambda x: x[1], reverse=True)
-    
-    # Encontrar o líder
     leader = sorted_results[0]
     leader_percentage = (leader[1] / total_voters) * 100
     
@@ -87,8 +81,8 @@ def display_voting_results(candidate_votes, total_voters):
     print("-" * 50)
     for candidate, votes in sorted_results:
         percentage = (votes / total_voters) * 100
-        bar_length = int(percentage / 2)  # Ajustado para melhor visualização
-        bar = "█" * bar_length + "░" * (50 - bar_length)  # Ajustado para 50 caracteres
+        bar_length = int(percentage / 2)
+        bar = "█" * bar_length + "░" * (50 - bar_length)
         print(f"{candidate.name:15} [{bar:50}] {votes:3d} ({percentage:5.1f}%)")
     
     print("-" * 50)

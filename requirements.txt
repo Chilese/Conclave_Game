@@ -1,3 +1,6 @@
 pytest==7.4.3
 python-dotenv==1.0.0
 typing-extensions==4.8.0
+colorama==0.4.6  # Para formatação de texto colorido no terminal
+rich==13.7.0    # Para interface mais rica no terminal
+python-logging==0.4.9.6  # Para logging avançado
