@@ -3,6 +3,8 @@ import random
 from typing import List, Dict, Optional
 from dataclasses import dataclass
 from Cardinal import Cardinal
+from game.events.event_types import EventType, EventTrigger  # Integração com os novos tipos de eventos
+from game.events.dynamic_event import DynamicEvent  # Integração com eventos dinâmicos
 
 @dataclass
 class EventEffect:
@@ -57,3 +59,13 @@ class Event:
             if cardinal.ideology == faction.ideology:
                 cardinal.discretion = max(0, cardinal.discretion - 20)  # Aumentar redução
         display_info(f"Crise de Confiança! Discrição dos cardeais {faction.name} caiu drasticamente.")
+
+# Integração com eventos dinâmicos
+def create_dynamic_event(name: str, event_type: EventType, trigger: EventTrigger, conditions, effects):
+    """Cria um evento dinâmico integrado ao sistema existente."""
+    return DynamicEvent(
+        event_type=event_type,
+        trigger=trigger,
+        conditions=conditions,
+        effects=effects
+    )
