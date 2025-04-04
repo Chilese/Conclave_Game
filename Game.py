@@ -103,6 +103,8 @@ class Game:
     def log_action(self, message):
         """Registra uma ação no log."""
         self.game_log.log_message(message)
+        # log_debug function is not defined, so this line is commented out or removed.
+        # log_debug(f"Ação registrada: {message}")
 
     def display_action_log(self):
         """Exibe o log de ações para o jogador."""
@@ -127,7 +129,7 @@ class Game:
         display_info("\nSuporte por Facção:", separator=False)
         for faction in self.factions:
             support = faction.candidate_support.get(self.favorite_candidate, 0)
-            bar = "█" * int(support / 2)  # Barra de progresso visual
+            bar = "█" * int(support / 2) + "░" * (50 - int(support / 2))  # Barra de progresso visual
             display_info(f"  {faction.name:12} [{bar:<50}] {support:.1f}%")
         
         # Top 3 rivais

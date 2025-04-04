@@ -34,10 +34,10 @@ def normalize_support(support_dict, min_value=2.0):
     for candidate in support_dict:
         support_dict[candidate] = round(support_dict[candidate] * factor, 2)
         
-    # Ajuste final para garantir soma 100%
+    # Ajuste final para garantir soma exata de 100%
     total = sum(support_dict.values())
     if total != 100:
-        diff = 100 - total
+        diff = round(100 - total, 2)
         max_key = max(support_dict, key=support_dict.get)
         support_dict[max_key] += diff
 

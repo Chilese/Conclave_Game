@@ -88,7 +88,7 @@ def display_voting_results(candidate_votes, total_voters):
     for candidate, votes in sorted_results:
         percentage = (votes / total_voters) * 100
         bar_length = int(percentage / 2)  # Ajustado para melhor visualização
-        bar = "█" * bar_length + "░" * (25 - bar_length)  # Reduzido tamanho da barra
-        print(f"{candidate.name:15} [{bar:25}] {votes:3d} ({percentage:5.1f}%)")
+        bar = "█" * bar_length + "░" * (50 - bar_length)  # Ajustado para 50 caracteres
+        print(f"{candidate.name:15} [{bar:50}] {votes:3d} ({percentage:5.1f}%)")
     
     print("-" * 50)
