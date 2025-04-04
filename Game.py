@@ -10,6 +10,8 @@ from rules import calculate_votes, check_majority
 from utils import normalize_support
 from events.GameEventManager import GameEventManager
 from actions import execute_action  # Adicionar esta importação
+from game_log import GameLog
+from game_statistics import GameStatistics
 
 # Constantes para valores fixos
 TOTAL_CARDINALS = 206
@@ -32,7 +34,8 @@ class Game:
         self.active_events = []
         self.rounds = 0
         self.interactions_this_cycle = 0
-        self.action_log = []
+        self.game_log = GameLog()
+        self.game_statistics = GameStatistics()
         self._setup_event_listeners()
 
     def _select_candidates(self):
@@ -99,13 +102,19 @@ class Game:
 
     def log_action(self, message):
         """Registra uma ação no log."""
-        self.action_log.append(message)
+        self.game_log.log_action(message)
 
     def display_action_log(self):
         """Exibe o log de ações para o jogador."""
-        display_info("\nHistórico de Ações:")
-        for action in self.action_log:
-            display_info(f"- {action}")
+        self.game_log.display_history()
+
+    def record_statistic(self, stat_name, value):
+        """Registra uma estatística."""
+        self.game_statistics.record_stat(stat_name, value)
+
+    def display_statistics(self):
+        """Exibe as estatísticas do jogo."""
+        self.game_statistics.display_statistics()
 
     def display_strategic_context(self):
         """Exibe o contexto estratégico de forma mais clara."""
