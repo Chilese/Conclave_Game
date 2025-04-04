@@ -51,28 +51,23 @@ def display_options(options, show_attributes=False):
 
 def display_action_feedback(action_type, target, result, before, after):
     """Exibe feedback de ação com formatação melhorada."""
-    display_info("\nResultado da Ação", separator=True)
-    print(f"Tipo: {action_type}")
-    print(f"Alvo: {target}")
-    
     change = after - before
     result_text = "Sucesso!" if change > 0 else "Falha" if change < 0 else "Neutro"
-    print(f"\nResultado: {result_text}")
-    
-    print("\nMudança de Suporte:")
-    print(f"  Anterior: {before:.1f}%")
-    print(f"  Atual:    {after:.1f}%")
-    print(f"  Variação: {change:+.1f}%")
-    
-    if change > 0:
-        print("\n✅ Ação bem-sucedida!")
-    elif change < 0:
-        print("\n⚠️ A ação teve efeito negativo!")
-    else:
-        print("\nℹ️ A ação não teve efeito significativo.")
+    feedback = (
+        f"\nResultado da Ação\n"
+        f"Tipo: {action_type}\n"
+        f"Alvo: {target}\n"
+        f"\nResultado: {result_text}\n"
+        f"\nMudança de Suporte:\n"
+        f"  Anterior: {before:.1f}%\n"
+        f"  Atual:    {after:.1f}%\n"
+        f"  Variação: {change:+.1f}%\n"
+    )
+    print(feedback)
+    return feedback
 
 def display_voting_results(candidate_votes, total_voters):
-    """Exibe os resultados da votação de forma organizada e clara."""
+    """Exibe resultados da votação com formatação melhorada."""
     required_majority = int(total_voters * 2 / 3) + 1
     display_info("\n=== Resultados da Votação ===", separator=True)
     
@@ -92,8 +87,8 @@ def display_voting_results(candidate_votes, total_voters):
     print("-" * 50)
     for candidate, votes in sorted_results:
         percentage = (votes / total_voters) * 100
-        bar_length = int(percentage / 2)
-        bar = "█" * bar_length + "░" * (50 - bar_length)
-        print(f"{candidate.name:15} [{bar}] {votes:3d} ({percentage:.1f}%)")
+        bar_length = int(percentage / 2)  # Ajustado para melhor visualização
+        bar = "█" * bar_length + "░" * (25 - bar_length)  # Reduzido tamanho da barra
+        print(f"{candidate.name:15} [{bar:25}] {votes:3d} ({percentage:5.1f}%)")
     
     print("-" * 50)

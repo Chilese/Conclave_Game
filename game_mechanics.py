@@ -1,23 +1,21 @@
 import random
 
 def apply_action_impact(cardeal_origem, cardeal_alvo, acao, base_impact):
-    # Calcula modificadores baseados nos atributos com valores maiores
-    influence_mod = cardeal_origem.influence * 0.02  # Dobrado
-    charisma_mod = cardeal_origem.charisma * 0.02   # Dobrado
-    discretion_mod = cardeal_origem.discretion * 0.02  # Dobrado
+    # Reduzir os modificadores de atributos
+    influence_mod = cardeal_origem.influence * 0.01  # Reduzido de 0.02
+    charisma_mod = cardeal_origem.charisma * 0.01   # Reduzido de 0.02
+    discretion_mod = cardeal_origem.discretion * 0.01  # Reduzido de 0.02
     
-    # Garante impacto mínimo de 5%
+    # Ajustar limites de impacto
     min_impact = 5.0
-    
-    # Limita o impacto máximo a 50%
-    MAX_IMPACT = 50.0
+    MAX_IMPACT = 25.0  # Reduzido de 50.0
     total_impact = min(MAX_IMPACT, max(min_impact, base_impact * (1 + influence_mod + charisma_mod)))
     
-    # Aumentar o impacto para ações bem-sucedidas
+    # Ajustar multiplicadores de ideologia
     if cardeal_origem.ideology == cardeal_alvo.ideology:
-        total_impact *= 1.5  # Bônus maior para mesma ideologia
+        total_impact *= 1.25  # Reduzido de 1.5
     else:
-        total_impact *= 1.1  # Redução menor para ideologias diferentes
+        total_impact *= 1.05  # Reduzido de 1.1
     
     # Chance de sucesso base + modificador de discrição
     success_chance = 0.8 + (discretion_mod * 0.2)  # Aumentada chance base
@@ -25,7 +23,7 @@ def apply_action_impact(cardeal_origem, cardeal_alvo, acao, base_impact):
     # Determina se a ação teve sucesso com impacto mínimo garantido
     if random.random() < success_chance:
         return max(min_impact, total_impact)
-    return -min_impact  # Retorna impacto negativo em caso de falha
+    return 0  # Retorna 0 em caso de falha
 
 def update_support(faction_support, cardeal_alvo, impact, favorite_candidate=None):
     # Aplica o impacto no suporte da facção

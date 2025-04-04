@@ -13,11 +13,10 @@ class DynamicEvent:
     
     def trigger_event(self, game_state):
         """Ativa o evento e seus efeitos"""
-        if self.check_conditions(game_state):
-            self.is_active = True
-            for effect in self.effects:
-                effect(game_state)
-            self.trigger_chain_events(game_state)
+        self.is_active = True
+        for effect in self.effects:
+            effect(game_state)
+        self.trigger_chain_events(game_state)
     
     def add_chain_event(self, event):
         """Adiciona um evento à cadeia"""

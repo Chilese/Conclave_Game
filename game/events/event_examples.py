@@ -1,4 +1,4 @@
-from ...Event import create_dynamic_event  # Corrige o caminho relativo para o módulo Event
+from game.Event import create_dynamic_event  # Corrige o caminho relativo para o módulo Event
 from .event_types import EventType, EventTrigger
 
 def create_faction_crisis_event(faction_name):

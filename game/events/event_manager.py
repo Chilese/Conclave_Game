@@ -11,7 +11,11 @@ class DynamicEventManager:
     
     def update(self, game_state):
         """Atualiza e processa eventos ativos"""
+        processed_events = []
         for priority, event in self.events:
             if event.check_conditions(game_state):
                 event.trigger_event(game_state)
                 self.event_history.append(event)
+                processed_events.append((priority, event))
+        # Remove eventos processados
+        self.events = [e for e in self.events if e not in processed_events]

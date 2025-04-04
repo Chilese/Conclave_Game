@@ -12,38 +12,34 @@ def get_input(prompt, min_val, max_val, default=None):
             print("Digite um número válido.")
 
 def normalize_support(support_dict, min_value=2.0):
-    """Normaliza os valores de suporte garantindo impacto mínimo das ações."""
-    log_debug("\n=== INÍCIO DA NORMALIZAÇÃO ===")
-    log_debug("Valores iniciais:")
-    for candidate, support in support_dict.items():
-        log_debug(f"- {candidate.name}: {support:.2f}%")
-    
+    """Normaliza os valores de suporte garantindo total 100%."""
     total = sum(support_dict.values())
-    log_debug(f"Total inicial: {total:.2f}%")
     
     if total <= 0:
-        log_debug("Total zero ou negativo - normalização abortada")
+        equal_support = 100.0 / len(support_dict)
+        for candidate in support_dict:
+            support_dict[candidate] = equal_support
         return
         
-    if total > 100:
-        excess = total - 100
-        # Distribuir o excesso proporcionalmente
-        for candidate in support_dict:
-            reduction = (support_dict[candidate] / total) * excess
-            support_dict[candidate] = max(min_value, support_dict[candidate] - reduction)
+    # Primeiro garantir valor mínimo
+    for candidate in support_dict:
+        if support_dict[candidate] < min_value:
+            support_dict[candidate] = min_value
+            
+    # Recalcular total após garantir mínimos
+    total = sum(support_dict.values())
     
-    # Garantir que a soma seja 100%
+    # Normalizar para 100%
+    factor = 100.0 / total
+    for candidate in support_dict:
+        support_dict[candidate] = round(support_dict[candidate] * factor, 2)
+        
+    # Ajuste final para garantir soma 100%
     total = sum(support_dict.values())
     if total != 100:
-        factor = 100 / total
-        for candidate in support_dict:
-            support_dict[candidate] = max(min_value, support_dict[candidate] * factor)
-    
-    log_debug("\nValores finais após normalização:")
-    for candidate, support in support_dict.items():
-        log_debug(f"- {candidate.name}: {support:.2f}%")
-    log_debug(f"Total final: {sum(support_dict.values()):.2f}%")
-    log_debug("=== FIM DA NORMALIZAÇÃO ===\n")
+        diff = 100 - total
+        max_key = max(support_dict, key=support_dict.get)
+        support_dict[max_key] += diff
 
 def log_debug(message):
     DEBUG_MODE = True  # Alterar para False em produção
